@@ -2295,3 +2295,6 @@ msgstr "Author edited."
 
 msgid "common.sandbox"
 msgstr "Application running in sandbox mode."
+
+msgid "navigation.invitation"
+msgstr "Invite User to take a role"
