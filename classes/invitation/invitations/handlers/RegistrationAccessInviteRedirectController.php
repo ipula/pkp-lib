@@ -96,7 +96,7 @@ class RegistrationAccessInviteRedirectController extends InvitationActionRedirec
     public function preRedirectActions(InvitationAction $action)
     {
         if ($action == InvitationAction::ACCEPT) {
-            $this->getInvitation()->finalise();
+            $this->getInvitation()->finalize();
         } elseif ($action == InvitationAction::DECLINE) {
             $this->getInvitation()->decline();
         }

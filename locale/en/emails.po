@@ -547,3 +547,19 @@ msgstr "orcidRequestAuthorAuthorization"
 #, fuzzy
 msgid "orcid.orcidCollectAuthorId.name"
 msgstr "orcidCollectAuthorId"
+
+#, fuzzy
+msgid "emails.userRoleAssignmentInvitationNotify.description"
+msgstr ""
+"This email is sent to users that are invited to obtain certain roles"
+
+#, fuzzy
+msgid "emails.userRoleAssignmentInvitationNotify.body"
+msgstr ""
+"<p>Dear {$recipientName},</p>"
+"<p>You are receiving this email because someone has invited you to obtain certain roles.</p>"
+"<p>Accept the request by following <a href=\"{$acceptInvitationUrl}\">this</a> link </p>"
+"<p>You can always <a href=\"{$declineInvitationUrl}\">reject</a> this invitation.</p>"
+"<p>Please feel free to contact me with any questions about the submission or the review process.</p>"
+"<p>Kind regards,</p>"
+"{$siteContactName}"

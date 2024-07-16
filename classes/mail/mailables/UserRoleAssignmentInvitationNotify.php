@@ -1,17 +1,15 @@
 <?php
 
 /**
- * @file classes/mail/mailables/ChangeProfileEmailInvitationNotify.php
+ * @file classes/mail/mailables/UserRoleAssignmentInvitationNotify.php
  *
- * Copyright (c) 2014-2022 Simon Fraser University
- * Copyright (c) 2000-2022 John Willinsky
+ * Copyright (c) 2014-2024 Simon Fraser University
+ * Copyright (c) 2000-2024 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
- * @class ChangeProfileEmailInvitationNotify
+ * @class UserRoleAssignmentInvitationNotify
  *
- * @ingroup mail_mailables
- *
- * @brief Email sent when a new user requests an email change
+ * @brief Email sent when a user is invited to participate into specific roles
  */
 
 namespace PKP\mail\mailables;
@@ -22,15 +20,15 @@ use PKP\mail\traits\Recipient;
 use PKP\mail\traits\Sender;
 use PKP\security\Role;
 
-class ChangeProfileEmailInvitationNotify extends Mailable
+class UserRoleAssignmentInvitationNotify extends Mailable
 {
     use Recipient;
     use Configurable;
     use Sender;
 
-    protected static ?string $name = 'mailable.changeProfileEmailInvitationNotify.name';
-    protected static ?string $description = 'mailable.changeProfileEmailInvitationNotify.description';
-    protected static ?string $emailTemplateKey = 'CHANGE_EMAIL';
+    protected static ?string $name = 'mailable.userRoleAssignmentInvitationNotify.name';
+    protected static ?string $description = 'mailable.userRoleAssignmentInvitationNotify.description';
+    protected static ?string $emailTemplateKey = 'USER_ROLE_ASSIGNMENT_INVITATION';
     protected static array $groupIds = [self::GROUP_OTHER];
     protected static array $fromRoleIds = [
         self::FROM_SYSTEM,

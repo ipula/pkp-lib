@@ -47,7 +47,7 @@ class InvitationController extends PKPBaseController
 
     public $requiresIdAndKey = [
         'receive',
-        'finalise',
+        'finalize',
         'refine',
         'decline',
     ];
@@ -186,8 +186,8 @@ class InvitationController extends PKPBaseController
             throw new Exception('This invitation does not support API handling');
         }
 
-        $this->createInvitationHandler = $invitation->getCreateInvitationController();
-        $this->receiveInvitationHandler = $invitation->getReceiveInvitationController();
+        $this->createInvitationHandler = $invitation->getCreateInvitationController($this->invitation);
+        $this->receiveInvitationHandler = $invitation->getReceiveInvitationController($this->invitation);
 
         if (!isset($this->createInvitationHandler) || !isset($this->receiveInvitationHandler)) {
             throw new Exception('This invitation should have defined its API handling code');
