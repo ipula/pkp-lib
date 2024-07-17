@@ -242,7 +242,7 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
         return new UserRoleAssignmentReceiveController($invitation);
     }
 
-    public function updateUserGroupArray(array $userGroupArray, array $userGroupsToAdd)
+    public function updateUserGroupArray(array &$userGroupArray, array $userGroupsToAdd)
     {
         if (is_array($userGroupsToAdd) && !empty($userGroupsToAdd)) {
             foreach ($userGroupsToAdd as $group) {
@@ -255,12 +255,12 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
         }
     }
 
-    private function addUserGroup(array $userGroupArray, array $userGroup)
+    private function addUserGroup(array &$userGroupArray, array $userGroup)
     {
         $userGroupArray[] = $userGroup;
     }
 
-    private function removeUserGroup(array $userGroupArray, int $userGroupId)
+    private function removeUserGroup(array &$userGroupArray, int $userGroupId)
     {
         $this->userGroups = array_filter($userGroupArray, function($group) use ($userGroupId) {
             return $group['userGroup'] != $userGroupId;
