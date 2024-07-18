@@ -32,6 +32,7 @@ use PKP\invitation\core\traits\ShouldValidate;
 use PKP\invitation\invitations\handlers\api\UserRoleAssignmentCreateController;
 use PKP\invitation\invitations\handlers\api\UserRoleAssignmentReceiveController;
 use PKP\invitation\invitations\handlers\ChangeProfileEmailInviteRedirectController;
+use PKP\invitation\invitations\handlers\UserRoleAssignmentInviteRedirectController;
 use PKP\invitation\models\InvitationModel;
 use PKP\mail\mailables\UserRoleAssignmentInvitationNotify;
 use PKP\security\Validation;
@@ -223,7 +224,7 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
 
     public function getInvitationActionRedirectController(): ?InvitationActionRedirectController
     {
-        return new ChangeProfileEmailInviteRedirectController($this);
+        return new UserRoleAssignmentInviteRedirectController($this);
     }
 
     /**
