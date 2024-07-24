@@ -103,6 +103,7 @@ import ListPanel from '@/components/ListPanel/ListPanel.vue';
 
 // Helper for initializing and tracking Vue controllers
 import VueRegistry from './classes/VueRegistry.js';
+import InvitationManager from '@/managers/InvitationManager/InvitationManager.vue';
 
 // Register global components
 VueRegistry.registerComponent('Badge', Badge);
@@ -205,6 +206,7 @@ VueRegistry.registerComponent('field-pub-id', FieldPubId);
 
 // Register ListPanel
 VueRegistry.registerComponent('PkpListPanel', ListPanel);
+VueRegistry.registerComponent('InvitationManager', InvitationManager);
 
 const pinia = createPinia();
 

@@ -13,7 +13,7 @@
      <h1 class="app__pageHeading">
          {translate key="navigation.submissions"}
      </h1>
- 
+
      <tabs :track-history="true">
          <tab id="myQueue" label="{translate key="dashboard.myQueue"}" :badge="components.{$smarty.const.SUBMISSIONS_LIST_MY_QUEUE}.itemsMax">
              {help file="submissions" class="pkp_help_tab"}
