@@ -68,9 +68,10 @@ class InvitationModel extends Model
         'createdAt' => 'datetime',
         'status' => 'string',
         'contextId' => 'int',
-        'className' => 'string',
+        'type' => 'string',
         'email' => 'string',
         'id' => 'int',
+        'inviterId' => 'int',
     ];
 
     protected $visible = [
@@ -82,6 +83,7 @@ class InvitationModel extends Model
         'context_id',
         'expiry_date',
         'email',
+        'inviter_id'
     ];
 
     public function keyHash(): Attribute
@@ -97,6 +99,14 @@ class InvitationModel extends Model
         return Attribute::make(
             get: fn ($user, $attributes) => $attributes['user_id'],
             set: fn ($value) => ['user_id' => $value]
+        );
+    }
+
+    public function email(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($user, $attributes) => $attributes['email'],
+            set: fn ($value) => ['email' => $value]
         );
     }
 
@@ -131,11 +141,11 @@ class InvitationModel extends Model
             set: fn ($value) => ['context_id' => $value]
         );
     }
-    public function className(): Attribute
+    public function type(): Attribute
     {
         return Attribute::make(
-            get: fn ($user, $attributes) => $attributes['class_name'],
-            set: fn ($value) => ['class_name' => $value]
+            get: fn ($user, $attributes) => $attributes['type'],
+            set: fn ($value) => ['type' => $value]
         );
     }
     public function id(): Attribute
@@ -151,6 +161,14 @@ class InvitationModel extends Model
         return Attribute::make(
             get: fn ($user, $attributes) => InvitationStatus::from($attributes['status']),
             set: fn ($value) => ['status' => $value->value]
+        );
+    }
+
+    public function inviterId(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($user, $attributes) => InvitationStatus::from($attributes['inviter_id']),
+            set: fn ($value) => ['inviter_id' => $value]
         );
     }
 
@@ -176,14 +194,6 @@ class InvitationModel extends Model
     public function scopeByStatus(Builder $query, InvitationStatus $status): Builder
     {
         return $query->where('status', '=', $status->value);
-    }
-
-    /**
-     * Add a local scope to get invitations that are of certain invitation type
-     */
-    public function scopeByClassName(Builder $query, string $className): Builder
-    {
-        return $query->where('class_name', '=', $className);
     }
 
     /**

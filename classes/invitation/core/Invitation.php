@@ -33,16 +33,17 @@ abstract class Invitation
 {
     public const DEFAULT_EXPIRY_DAYS = 3;
 
-    private string $key;
+    private ?string $key = null;
 
     public InvitationModel $invitationModel;
 
-    protected array $hiddenBeforeDispatch = [];
-    protected array $hiddenAfterDispatch = [];
+    protected array $notAccessibleBeforeInvite = [];
+    protected array $notAccessibleAfterInvite = [];
     protected array $payloadAccessibleProperties = [];
+    protected array $propertyClassMap = [];
 
     abstract public static function getType(): string;
-    abstract protected function preDispatchActions(): void;
+    abstract protected function preInviteActions(): void;
     abstract public function getInvitationActionRedirectController(): ?InvitationActionRedirectController;
 
     public function __construct(InvitationModel $invitationModel = null)
@@ -56,9 +57,22 @@ abstract class Invitation
 
     public function initialize(?int $userId = null, ?int $contextId = null, ?string $email = null)
     {
-        if (!isset($userId) && !isset($email)) {
-            throw new Exception("Invitation should contain at least one user id or an invited email')");
+        if ((!isset($userId) && !isset($email)) || (isset($userId) && isset($email))) {
+            throw new Exception("Invitation should contain the user id or an invited email.')");
         }
+
+        InvitationModel::byStatus(InvitationStatus::INITIALIZED)
+            ->when($userId !== null, function ($query) use ($userId) {
+                return $query->byUserId($userId);
+            })
+            ->when($contextId !== null, function ($query) use ($contextId) {
+                return $query->byContextId($contextId);
+            })
+            ->when($email !== null, function ($query) use ($email) {
+                return $query->byEmail($email);
+            })
+            ->byType($this->getType())
+            ->delete();
 
         $this->invitationModel->userId = $userId;
         $this->invitationModel->contextId = $contextId;
@@ -69,15 +83,26 @@ abstract class Invitation
         $this->invitationModel->save();
     }
 
-    public function fillFromArgs(array $args)
+    protected function fillFromPayload()
+    {
+        if ($this->invitationModel->payload) {
+            foreach ($this->invitationModel->payload as $key => $value) {
+                if (property_exists($this, $key)) {
+                    $this->{$key} = $value;
+                }
+            }
+        }
+    }
+
+    public function fillFromArgs(array $args): void
     {
         foreach ($args as $propName => $value) {
             if ($this->getStatus() == InvitationStatus::INITIALIZED) {
-                if (in_array($propName, $hiddenBeforeDispatch)) {
+                if (in_array($propName, $this->notAccessibleBeforeInvite)) {
                     continue;
                 }
             } elseif ($this->getStatus() == InvitationStatus::PENDING) {
-                if (in_array($propName, $hiddenAfterDispatch)) {
+                if (in_array($propName, $this->notAccessibleAfterInvite)) {
                     continue;
                 }
             } else {
@@ -85,17 +110,8 @@ abstract class Invitation
             }
 
             if ($propName !== 'invitationModel' && property_exists($this, $propName)) {
-                $this->{$propName} = $value;
-            }
-        }
-    }
-
-    protected function fillFromPayload()
-    {
-        if ($this->invitationModel->payload) {
-            foreach ($this->invitationModel->payload as $key => $value) {
-                if (property_exists($this, $key)) {
-                    $this->{$key} = $value;
+                if (!is_array($this->{$propName})) {
+                    $this->{$propName} = $value;
                 }
             }
         }
@@ -128,7 +144,7 @@ abstract class Invitation
             }
         }
 
-        if (!$this->validatePayload($this->invitationModel->payload ?? [], $payload)) {
+        if (!$this->checkPayloadIntegrity($this->invitationModel->payload ?? [], $payload)) {
             return null;
         }
 
@@ -138,14 +154,19 @@ abstract class Invitation
         return $this->invitationModel->save();
     }
 
-    public function getHiddenBeforeDispatch(): array
+    public function getNotAccessibleBeforeInvite(): array
     {
-        return $this->hiddenBeforeDispatch;
+        return $this->notAccessibleBeforeInvite;
     }
 
-    public function getHiddenAfterDispatch(): array
+    public function getNotAccessibleAfterInvite(): array
     {
-        return $this->hiddenAfterDispatch;
+        return $this->notAccessibleAfterInvite;
+    }
+
+    public function getPropertyClassMap(): array
+    {
+        return $this->propertyClassMap;
     }
 
     public function getPayloadAccessibleProperties(): array
@@ -166,7 +187,7 @@ abstract class Invitation
 
     public function setExpiryDate(Carbon $expiryDate)
     {
-        if ($this->getStatus() !== InvitationStatus::INITIALIZED) {
+        if ($this->getStatus() !== InvitationStatus::INITIALIZED) {+
             throw new Exception('Can not change expiry date at this stage');
         }
 
@@ -180,7 +201,7 @@ abstract class Invitation
         }
 
         // Need to return error messages also?
-        $this->preDispatchActions();
+        $this->preInviteActions();
 
         $this->checkForKey();
 
@@ -205,7 +226,7 @@ abstract class Invitation
         return true;
     }
 
-    public static function makeKeyHash($key): string
+    private static function makeKeyHash($key): string
     {
         return password_hash($key, PASSWORD_BCRYPT);
     }
@@ -238,14 +259,14 @@ abstract class Invitation
         return InvitationHandler::getActionUrl($invitationAction, $this);
     }
 
-    public function validatePayload(array $initialPayload, array $modifiedPayload): bool
+    public function checkPayloadIntegrity(array $initialPayload, array $modifiedPayload): bool
     {
         $checkArray = null;
 
         if ($this->getStatus() == InvitationStatus::INITIALIZED) {
-            $checkArray = $this->getHiddenBeforeDispatch();
+            $checkArray = $this->getNotAccessibleBeforeInvite();
         } elseif ($this->getStatus() == InvitationStatus::PENDING) {
-            $checkArray = $this->getHiddenAfterDispatch();
+            $checkArray = $this->getNotAccessibleAfterInvite();
         } else {
             throw new Exception('You can not modify the Invitation in this stage');
         }

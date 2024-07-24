@@ -130,4 +130,19 @@ class UserUserGroup extends \Illuminate\Database\Eloquent\Model
     {
         return $query->orderBy('user_user_groups.' . $column, $direction);
     }
+
+    // Override toArray method to include camelCase attributes
+    public function toArray()
+    {
+        $array = parent::toArray();
+
+        // Add camelCase attributes
+        $array['userId'] = $this->user_id;
+        $array['userGroupId'] = $this->user_group_id;
+        $array['dateStart'] = $this->date_start;
+        $array['dateEnd'] = $this->date_end;
+        $array['masthead'] = $this->masthead;
+
+        return $array;
+    }
 }

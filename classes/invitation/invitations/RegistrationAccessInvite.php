@@ -48,7 +48,7 @@ class RegistrationAccessInvite extends Invitation implements IBackofficeHandleab
         });
     }
 
-    protected function preDispatchActions(): void
+    protected function preInviteActions(): void
     {
         $pendingInvitations = InvitationModel::byStatus(InvitationStatus::PENDING)
             ->byType(self::INVITATION_TYPE)
@@ -61,7 +61,7 @@ class RegistrationAccessInvite extends Invitation implements IBackofficeHandleab
         }
     }
 
-    public function finalise(): void
+    public function finalize(): void
     {
         $user = Repo::user()->get($this->invitationModel->userId, true);
 
