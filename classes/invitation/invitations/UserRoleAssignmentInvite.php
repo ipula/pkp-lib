@@ -22,7 +22,6 @@ use PKP\core\Core;
 use PKP\identity\Identity;
 use PKP\invitation\core\contracts\IApiHandleable;
 use PKP\invitation\core\CreateInvitationController;
-use PKP\invitation\core\enums\InvitationAction;
 use PKP\invitation\core\enums\InvitationStatus;
 use PKP\invitation\core\Invitation;
 use PKP\invitation\core\InvitationActionRedirectController;
@@ -31,7 +30,6 @@ use PKP\invitation\core\traits\HasMailable;
 use PKP\invitation\core\traits\ShouldValidate;
 use PKP\invitation\invitations\handlers\api\UserRoleAssignmentCreateController;
 use PKP\invitation\invitations\handlers\api\UserRoleAssignmentReceiveController;
-use PKP\invitation\invitations\handlers\ChangeProfileEmailInviteRedirectController;
 use PKP\invitation\invitations\handlers\UserRoleAssignmentInviteRedirectController;
 use PKP\invitation\models\InvitationModel;
 use PKP\mail\mailables\UserRoleAssignmentInvitationNotify;
@@ -101,8 +99,10 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
         }
 
         $request = Application::get()->getRequest();
+        $contextDao = Application::getContextDAO();
+        $context = $contextDao->getById($this->invitationModel->contextId);
 
-        $mailable = new UserRoleAssignmentInvitationNotify();
+        $mailable = new UserRoleAssignmentInvitationNotify($context, $this);
         $mailable->recipients([$sendIdentity]);
         $mailable->sender($request->getUser());
 
@@ -126,18 +126,6 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
 
         $this->setMailable($mailable);
 
-        $acceptUrl = $this->getActionURL(InvitationAction::ACCEPT);
-        $declineUrl = $this->getActionURL(InvitationAction::DECLINE);
-
-        $this->mailable->buildViewDataUsing(function () use ($acceptUrl, $declineUrl) {
-            return [
-                'acceptInvitationUrl' => $acceptUrl,
-                'declineInvitationUrl' => $declineUrl,
-                'userGroupsToAdd' => $this->userGroupsToAdd,
-                'userGroupsToRemove' => $this->userGroupsToRemove,
-            ];
-        });
-
         return $this->mailable;
     }
 
@@ -149,19 +137,20 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
         }
 
         // Invalidate any other related invitation
-        $pendingInvitations = InvitationModel::byStatus(InvitationStatus::PENDING)
+        InvitationModel::byStatus(InvitationStatus::PENDING)
             ->byType(self::INVITATION_TYPE)
-            ->when($this->invitationModel->userId, function ($query, $userId) {
-                return $query->byUserId($userId);
+            ->when(isset($this->invitationModel->userId), function ($query) {
+                return $query->byUserId($this->invitationModel->userId);
             })
-            ->when(!$this->invitationModel->userId && $this->invitationModel->email, function ($query, $email) {
-                return $query->byEmail($email);
+            ->when(!isset($this->invitationModel->userId) && $this->invitationModel->email, function ($query) {
+                return $query->byEmail($this->invitationModel->email);
             })
-            ->get();
+            ->byContextId($this->invitationModel->contextId)
+            ->delete();
 
-        foreach($pendingInvitations as $pendingInvitation) {
-            $pendingInvitation->markAs(InvitationStatus::DECLINED);
-        }
+        // foreach($pendingInvitations as $pendingInvitation) {
+        //     $pendingInvitation->markAs(InvitationStatus::DECLINED);
+        // }
     }
 
     public function finalize(): void
@@ -251,24 +240,24 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
                     $this->removeUserGroup($userGroupArray, $group['userGroup']);
                     $this->addUserGroup($userGroupArray, $group);
                 }
-                
             }
         }
     }
 
     private function addUserGroup(array &$userGroupArray, array $userGroup)
     {
+        // $userGroup['userGroupObject'] = Repo::userGroup()->get($userGroup['userGroup']);
         $userGroupArray[] = $userGroup;
     }
 
     private function removeUserGroup(array &$userGroupArray, int $userGroupId)
     {
-        $this->userGroups = array_filter($userGroupArray, function($group) use ($userGroupId) {
+        $userGroupArray = array_filter($userGroupArray, function($group) use ($userGroupId) {
             return $group['userGroup'] != $userGroupId;
         });
 
         // Re-index the array to maintain a consistent array structure
-        $this->userGroups = array_values($userGroupArray);
+        $userGroupArray = array_values($userGroupArray);
     }
 
     // public function toJsonArray(): array

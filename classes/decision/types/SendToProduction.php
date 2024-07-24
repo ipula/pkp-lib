@@ -27,6 +27,7 @@ use PKP\decision\steps\Email;
 use PKP\decision\steps\PromoteFiles;
 use PKP\decision\types\traits\NotifyAuthors;
 use PKP\mail\mailables\DecisionSendToProductionNotifyAuthor;
+use PKP\mail\mailables\UserRoleAssignmentInvitationNotify;
 use PKP\security\Role;
 use PKP\submission\reviewRound\ReviewRound;
 use PKP\submissionFile\SubmissionFile;
@@ -137,6 +138,20 @@ class SendToProduction extends DecisionType
                 $this->ACTION_NOTIFY_AUTHORS,
                 __('editor.submission.decision.notifyAuthors'),
                 __('editor.submission.decision.sendToProduction.notifyAuthorsDescription'),
+                $authors,
+                $mailable
+                    ->sender($editor)
+                    ->recipients($authors),
+                $context->getSupportedFormLocales(),
+                $fileAttachers
+            ));
+
+            $invitation = Repo::invitation()->getById(88);
+            $mailable = new UserRoleAssignmentInvitationNotify($context, $invitation);
+            $steps->addStep(new Email(
+                'test',
+                __('editor.submission.decision.notifyAuthors2'),
+                __('editor.submission.decision.sendToProduction.notifyAuthorsDescription2'),
                 $authors,
                 $mailable
                     ->sender($editor)

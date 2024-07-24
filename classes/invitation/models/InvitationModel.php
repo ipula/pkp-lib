@@ -71,6 +71,7 @@ class InvitationModel extends Model
         'type' => 'string',
         'email' => 'string',
         'id' => 'int',
+        'inviterId' => 'int',
     ];
 
     protected $visible = [
@@ -82,6 +83,7 @@ class InvitationModel extends Model
         'context_id',
         'expiry_date',
         'email',
+        'inviter_id'
     ];
 
     public function keyHash(): Attribute
@@ -159,6 +161,14 @@ class InvitationModel extends Model
         return Attribute::make(
             get: fn ($user, $attributes) => InvitationStatus::from($attributes['status']),
             set: fn ($value) => ['status' => $value->value]
+        );
+    }
+
+    public function inviterId(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($user, $attributes) => InvitationStatus::from($attributes['inviter_id']),
+            set: fn ($value) => ['inviter_id' => $value]
         );
     }
 

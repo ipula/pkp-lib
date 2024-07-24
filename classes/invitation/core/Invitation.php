@@ -33,7 +33,7 @@ abstract class Invitation
 {
     public const DEFAULT_EXPIRY_DAYS = 3;
 
-    private string $key;
+    private ?string $key = null;
 
     public InvitationModel $invitationModel;
 
@@ -60,6 +60,19 @@ abstract class Invitation
         if ((!isset($userId) && !isset($email)) || (isset($userId) && isset($email))) {
             throw new Exception("Invitation should contain the user id or an invited email.')");
         }
+
+        InvitationModel::byStatus(InvitationStatus::INITIALIZED)
+            ->when($userId !== null, function ($query) use ($userId) {
+                return $query->byUserId($userId);
+            })
+            ->when($contextId !== null, function ($query) use ($contextId) {
+                return $query->byContextId($contextId);
+            })
+            ->when($email !== null, function ($query) use ($email) {
+                return $query->byEmail($email);
+            })
+            ->byType($this->getType())
+            ->delete();
 
         $this->invitationModel->userId = $userId;
         $this->invitationModel->contextId = $contextId;
