@@ -1,0 +1,92 @@
+msgid "invitation.header"
+msgstr "Invitations"
+
+msgid "invitation.inviteToRole.btn"
+msgstr "Invite to a role"
+
+msgid "invitation.wizard.pageTitle"
+msgstr "Invite user to take a role"
+
+msgid "invitation.wizard.pageTitleDescription"
+msgstr "You are inviting a user to take a role in OJS along with appearing in the journal masthead"
+
+msgid "userInvitation.enterDetailsLabel"
+msgstr "Enter details"
+
+msgid "userInvitation.reviewAndInviteLabel"
+msgstr "Review & invite for roles"
+
+msgid "userInvitation.searchUser.stepName"
+msgstr "Search User"
+
+msgid "userInvitation.searchUser.stepLabel"
+msgstr "{$step} - Search User"
+
+msgid "userInvitation.searchUser.nextButtonLabel"
+msgstr "Search User"
+
+msgid "userInvitation.searchUser.stepDescription"
+msgstr "Search for the user using their email address, username or ORCID ID. Enter at least one details to get started. If user does not exist, ypu can invite them to take up roles and be a part of your journal. If the user already exist in the system, you can view user information and invite to take a additional roles."
+
+msgid "userInvitation.emailField.description"
+msgstr "e.g. aeinstein@example.com"
+
+msgid "userInvitation.usernameField.description"
+msgstr "e.g. mickeymouse"
+
+msgid "userInvitation.orcidField.description"
+msgstr "e.g. 0000-0000-0000-0000"
+
+msgid "userInvitation.enterDetails.stepName"
+msgstr "Enter details"
+
+msgid "userInvitation.enterDetails.stepLabel"
+msgstr "{$step} - Enter details and invite for roles"
+
+msgid "userInvitation.enterDetails.stepDescription"
+msgstr "You can invite them to take up a role in OJS"
+
+msgid "userInvitation.enterDetails.nextButtonLabel"
+msgstr "Save And Continue"
+
+msgid "invitation.role.selectRole"
+msgstr "Select a new role"
+
+msgid "invitation.role.dateStart"
+msgstr "Start Date"
+
+msgid "invitation.role.dateEnd"
+msgstr "End Date"
+
+msgid "invitation.role.masthead"
+msgstr "Journal Masthead"
+
+msgid "invitation.role.addRole.button"
+msgstr "Add Another Role"
+
+msgid "userInvitation.roleTable.role"
+msgstr "Role"
+
+msgid "userInvitation.roleTable.startDate"
+msgstr "Start Date"
+
+msgid "userInvitation.roleTable.endDate"
+msgstr "End Date"
+
+msgid "userInvitation.roleTable.journalMasthead"
+msgstr "Journal Masthead"
+
+msgid "userInvitation.sendMail.stepName"
+msgstr "Review & invite for roles"
+
+msgid "userInvitation.sendMail.nextButtonLabel"
+msgstr "Invite user to the role"
+
+msgid "userInvitation.sendMail.stepDescription"
+msgstr "Send the user an email to let them know about the invitation, next steps, journal GDPR polices and ORCiD verification"
+
+msgid "userInvitation.sendMail.stepLabel"
+msgstr "{$step} - Modify email shared with the user"
+
+
+
