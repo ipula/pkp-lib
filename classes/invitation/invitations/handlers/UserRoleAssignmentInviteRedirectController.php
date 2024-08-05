@@ -23,6 +23,7 @@ use PKP\invitation\core\enums\InvitationAction;
 use PKP\invitation\core\enums\InvitationStatus;
 use PKP\invitation\core\InvitationActionRedirectController;
 use PKP\invitation\invitations\UserRoleAssignmentInvite;
+use PKP\invitation\stepTypes\AcceptInvitationStep;
 
 class UserRoleAssignmentInviteRedirectController extends InvitationActionRedirectController
 {
@@ -34,9 +35,21 @@ class UserRoleAssignmentInviteRedirectController extends InvitationActionRedirec
     public function acceptHandle(Request $request): void
     {
         $templateMgr = TemplateManager::getManager($request);
-
         $templateMgr->assign('invitation', $this->invitation);
-        $templateMgr->display('frontend/pages/invitations.tpl');
+        $context = $request->getContext();
+        $steps = new AcceptInvitationStep();
+        $templateMgr->setState([
+            'steps' => $steps->getSteps($this->invitation, $context),
+            'primaryLocale' => $context->getData('primaryLocale'),
+            'pageTitle' => __('invitation.wizard.pageTitle'),
+            'invitationId' => (int)$request->getUserVar('id') ?: null,
+            'invitationKey' => $request->getUserVar('key') ?: null,
+            'pageTitleDescription' => __('invitation.wizard.pageTitleDescription'),
+        ]);
+        $templateMgr->assign([
+            'pageComponent' => 'PageOJS',
+        ]);
+        $templateMgr->display('invitation/acceptInvitation.tpl');
     }
 
     public function declineHandle(Request $request): void

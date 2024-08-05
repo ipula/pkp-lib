@@ -28,6 +28,7 @@ class UserDetailsForm extends FormComponent
 
         $this->addField(new FieldText('email', [
             'label' => __('user.email'),
+            'description' => __('invitation.email.description'),
             'isRequired' => true,
             'size' => 'large',
         ]))
@@ -38,11 +39,13 @@ class UserDetailsForm extends FormComponent
             ]))
             ->addField(new FieldText('givenName', [
                 'label' => __('user.givenName'),
+                'description' => __('invitation.givenName.description'),
                 'isRequired' => false,
                 'size' => 'large',
             ]))
             ->addField(new FieldText('familyName', [
                 'label' => __('user.familyName'),
+                'description' => __('invitation.familyName.description'),
                 'isRequired' => false,
                 'size' => 'large',
             ]));

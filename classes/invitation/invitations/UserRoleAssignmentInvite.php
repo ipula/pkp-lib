@@ -88,7 +88,7 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
         $sendIdentity = new Identity();
         if ($this->invitationModel->userId) {
             $user = Repo::user()->get($this->invitationModel->userId);
-            
+
             $sendIdentity->setFamilyName($user->getFamilyName(null), null);
             $sendIdentity->setGivenName($user->getGivenName(null), null);
             $sendIdentity->setEmail($user->getEmail());
@@ -163,8 +163,7 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
             if (!isset($user)) {
                 throw new Exception('The user does not exist');
             }
-        }
-        else if ($this->invitationModel->email) {
+        } elseif ($this->invitationModel->email) {
             $user = Repo::user()->getByEmail($this->invitationModel->email);
 
             if (!isset($user)) {
@@ -202,8 +201,8 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
                 $userGroupData['userGroup'],
                 $userGroupData['dateStart'],
                 $userGroupData['dateEnd'],
-                isset($userGroupData['masthead']) && $userGroupData['masthead'] 
-                    ? UserUserGroupMastheadStatus::STATUS_ON 
+                isset($userGroupData['masthead']) && $userGroupData['masthead']
+                    ? UserUserGroupMastheadStatus::STATUS_ON
                     : UserUserGroupMastheadStatus::STATUS_OFF
             );
         }
@@ -219,15 +218,15 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
     /**
      * @inheritDoc
      */
-    public function getCreateInvitationController(Invitation $invitation): CreateInvitationController 
+    public function getCreateInvitationController(Invitation $invitation): CreateInvitationController
     {
         return new UserRoleAssignmentCreateController($invitation);
     }
-    
+
     /**
      * @inheritDoc
      */
-    public function getReceiveInvitationController(Invitation $invitation): ReceiveInvitationController 
+    public function getReceiveInvitationController(Invitation $invitation): ReceiveInvitationController
     {
         return new UserRoleAssignmentReceiveController($invitation);
     }
@@ -252,7 +251,7 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
 
     private function removeUserGroup(array &$userGroupArray, int $userGroupId)
     {
-        $userGroupArray = array_filter($userGroupArray, function($group) use ($userGroupId) {
+        $userGroupArray = array_filter($userGroupArray, function ($group) use ($userGroupId) {
             return $group['userGroup'] != $userGroupId;
         });
 
@@ -279,7 +278,7 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
 
     //     return $data;
     // }
-    
+
     /**
      * @inheritDoc
      */

@@ -26,14 +26,14 @@ use PKP\security\authorization\UserRolesRequiredPolicy;
 
 class UserRoleAssignmentCreateController extends CreateInvitationController
 {
-    public function __construct(public UserRoleAssignmentInvite $invitation) 
+    public function __construct(public UserRoleAssignmentInvite $invitation)
     {
     }
 
     /**
      * @inheritDoc
      */
-    public function authorize(PKPBaseController $controller, PKPRequest $request, array &$args, array $roleAssignments): bool 
+    public function authorize(PKPBaseController $controller, PKPRequest $request, array &$args, array $roleAssignments): bool
     {
         $this->request = $request;
 
@@ -47,7 +47,7 @@ class UserRoleAssignmentCreateController extends CreateInvitationController
     /**
      * @inheritDoc
      */
-    public function add(Request $illuminateRequest): JsonResponse 
+    public function add(Request $illuminateRequest): JsonResponse
     {
         $reqInput = $illuminateRequest->all();
         $payload = $reqInput['invitationData'];
@@ -64,7 +64,7 @@ class UserRoleAssignmentCreateController extends CreateInvitationController
     /**
      * @inheritDoc
      */
-    public function populate(Request $illuminateRequest): JsonResponse 
+    public function populate(Request $illuminateRequest): JsonResponse
     {
         $reqInput = $illuminateRequest->all();
         $payload = $reqInput['invitationData'];
@@ -88,7 +88,7 @@ class UserRoleAssignmentCreateController extends CreateInvitationController
             ];
 
             return response()->json(
-                $response, 
+                $response,
                 Response::HTTP_UNPROCESSABLE_ENTITY
             );
         }
@@ -97,21 +97,22 @@ class UserRoleAssignmentCreateController extends CreateInvitationController
         // in order to be able to fully control the response
         return response()->json($this->invitation, Response::HTTP_OK);
     }
-    
+
     /**
      * @inheritDoc
      */
-    public function get(Request $illuminateRequest): JsonResponse 
+    public function get(Request $illuminateRequest): JsonResponse
     {
         return response()->json(
-            $this->invitation, Response::HTTP_OK
+            $this->invitation,
+            Response::HTTP_OK
         );
     }
-    
+
     /**
      * @inheritDoc
      */
-    public function invite(Request $illuminateRequest): JsonResponse 
+    public function invite(Request $illuminateRequest): JsonResponse
     {
         $this->invitation->invite();
 

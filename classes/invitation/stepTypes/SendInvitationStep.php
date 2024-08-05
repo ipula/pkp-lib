@@ -1,6 +1,6 @@
 <?php
 
-namespace PKP\invitation\types;
+namespace PKP\invitation\stepTypes;
 
 use APP\core\Application;
 use Exception;
@@ -9,16 +9,17 @@ use PKP\context\Context;
 use PKP\facades\Repo;
 use PKP\invitation\core\Invitation;
 use PKP\invitation\sections\Email;
-use PKP\invitation\sections\EmptySection;
 use PKP\invitation\sections\Form;
 use PKP\invitation\sections\Sections;
 use PKP\invitation\steps\Step;
-use PKP\mail\mailables\ChangeProfileEmailInvitationNotify;
+use PKP\mail\mailables\UserRoleAssignmentInvitationNotify;
 use stdClass;
 
 class SendInvitationStep extends InvitationStepTypes
 {
     /**
+     * get send invitation steps
+     *
      * @throws Exception
      */
     public function getSteps(?Invitation $invitation, Context $context): array
@@ -46,11 +47,7 @@ class SendInvitationStep extends InvitationStepTypes
             'UserInvitationSearchFormStep'
         );
         $sections->addSection(
-            new EmptySection(
-                '',
-                '',
-                ''
-            ),
+            null,
             [
                 'validateFields' => []
             ]
@@ -133,7 +130,8 @@ class SendInvitationStep extends InvitationStepTypes
             'email',
             'UserInvitationEmailComposerStep'
         );
-        $mailable = new ChangeProfileEmailInvitationNotify();
+        $fakeInvitation = $this->getFakeInvitation();
+        $mailable = new UserRoleAssignmentInvitationNotify($context, $fakeInvitation);
         $sections->addSection(
             new Email(
                 'userInvited',

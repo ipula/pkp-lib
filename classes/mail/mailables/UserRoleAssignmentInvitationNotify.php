@@ -86,7 +86,7 @@ class UserRoleAssignmentInvitationNotify extends Mailable
         $variables[static::$existingRoles] = __('emailTemplate.variable.invitation.existingRoles');
         $variables[static::$acceptUrl] = __('emailTemplate.variable.invitation.acceptUrl');
         $variables[static::$declineUrl] = __('emailTemplate.variable.invitation.declineUrl');
-        
+
         return $variables;
     }
 
@@ -105,7 +105,7 @@ class UserRoleAssignmentInvitationNotify extends Mailable
         $user = null;
         if ($this->invitation->invitationModel->userId) {
             $user = Repo::user()->get($this->invitation->invitationModel->userId);
-            
+
             $sendIdentity->setFamilyName($user->getFamilyName($locale), $locale);
             $sendIdentity->setGivenName($user->getGivenName($locale), $locale);
             $sendIdentity->setEmail($user->getEmail());
@@ -131,7 +131,7 @@ class UserRoleAssignmentInvitationNotify extends Mailable
             $userGroup = Repo::userGroup()->get($userGroupData['userGroup']);
             $userGroupsAdded = $userGroupsAdded . ',' . $userGroup->getName($locale);
 
-            $userGroupSection ='<div class="section">
+            $userGroupSection = '<div class="section">
                 <div class="section-number">' . $count . '.</div>
                 <div class="section-content">
                     <h2>' . $userGroup->getName($locale) . '</h2>
@@ -170,15 +170,15 @@ class UserRoleAssignmentInvitationNotify extends Mailable
                 ->filterByContextIds([$this->invitation->invitationModel->contextId])
                 ->filterByUserIds([$user->getId()])
                 ->getMany();
-            
+
             foreach ($userGroups as $userGroup) {
                 $userUserGroups = UserUserGroup::withUserId($user->getId())
                     ->withUserGroupId($userGroup->getId())
                     ->get();
-                
+
                 $count = 1;
                 foreach ($userUserGroups as $userUserGroup) {
-                    $userGroupSection ='<div class="section">
+                    $userGroupSection = '<div class="section">
                         <div class="section-number">' . $count . '.</div>
                         <div class="section-content">
                             <h2>' . $userGroup->getName($locale) . '</h2>
@@ -219,7 +219,7 @@ class UserRoleAssignmentInvitationNotify extends Mailable
                 static::$rolesRemoved => $userGroupsremoved,
                 static::$existingRoles => $existingUserGroups,
                 'emailTemplateStyle' => $emailTemplateStyle,
-                
+
             ]
         );
     }

@@ -21,25 +21,23 @@ class Sections
         $this->type = $type;
     }
     /**
-     * Add a step to the workflow
-     *
-     * @param bool $prepend Pass true to add this step before other steps
+     * Add a step to the invitation
      */
-    public function addSection(Section $section, $props, bool $prepend = false)
+    public function addSection($section, $props): void
     {
-        if ($prepend) {
-            array_unshift($this->sections, $section);
+        if(is_null($section)) {
+            $this->sections[] = $section;
         } else {
             $this->sections[$section->id] = $section;
-            $this->props = $props;
         }
+        $this->props = $props;
     }
 
     public function getState(): array
     {
         $state = [];
         foreach ($this->sections as $section) {
-            if($section->type === 'emptySection') {
+            if(is_null($section)) {
                 $props = [
                     ...$this->props
                 ];

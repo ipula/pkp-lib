@@ -21,12 +21,10 @@ use APP\core\Request;
 use APP\facades\Repo;
 use APP\handler\Handler;
 use APP\template\TemplateManager;
-use Exception;
-use PKP\components\forms\invitation\AcceptUserDetailsForm;
 use PKP\core\PKPApplication;
 use PKP\invitation\core\enums\InvitationAction;
 use PKP\invitation\core\Invitation;
-use PKP\invitation\types\SendInvitationStep;
+use PKP\invitation\stepTypes\SendInvitationStep;
 
 class InvitationHandler extends Handler
 {
@@ -40,26 +38,11 @@ class InvitationHandler extends Handler
      */
     public function accept(array $args, Request $request): void
     {
-        $invitation = $this->getInvitationByKey($request);
-        //        $invitationHandler = $invitation->getInvitationActionRedirectController();
-        //        $invitationHandler->preRedirectActions(InvitationAction::ACCEPT);
-        //        $invitationHandler->acceptHandle($request);
-        $templateMgr = TemplateManager::getManager($request);
         $this->setupTemplate($request);
-        $context = $request->getContext();
-        $steps = $this->getAcceptSteps($request, $invitation, $context);
-        $templateMgr->setState([
-            'steps' => $steps,
-            'primaryLocale' => $context->getData('primaryLocale'),
-            'pageTitle' => __('invitation.wizard.pageTitle'),
-            'invitationId' => (int)$request->getUserVar('id') ?: null,
-            'invitationKey' => $request->getUserVar('key') ?: null,
-            'pageTitleDescription' => __('invitation.wizard.pageTitleDescription'),
-        ]);
-        $templateMgr->assign([
-            'pageComponent' => 'PageOJS',
-        ]);
-        $templateMgr->display('invitation/acceptInvitation.tpl');
+        $invitation = $this->getInvitationByKey($request);
+        $invitationHandler = $invitation->getInvitationActionRedirectController();
+        $invitationHandler->preRedirectActions(InvitationAction::ACCEPT);
+        $invitationHandler->acceptHandle($request);
     }
 
     /**
@@ -73,7 +56,7 @@ class InvitationHandler extends Handler
         $invitationHandler->declineHandle($request);
     }
 
-    private function getInvitationByKey(Request $request)
+    private function getInvitationByKey(Request $request): Invitation
     {
         $key = $request->getUserVar('key') ?: null;
         $id = $request->getUserVar('id') ?: null;
@@ -81,11 +64,10 @@ class InvitationHandler extends Handler
         $invitation = Repo::invitation()
             ->getByIdAndKey($id, $key);
 
-        //        if (is_null($invitation)) {
-        //            $request->getDispatcher()->handle404();
-        //        }
-
-        return null;
+        if (is_null($invitation)) {
+            $request->getDispatcher()->handle404();
+        }
+        return $invitation;
     }
 
     public static function getActionUrl(InvitationAction $action, Invitation $invitation): ?string
@@ -121,38 +103,22 @@ class InvitationHandler extends Handler
         $breadcrumbs = $templateMgr->getTemplateVars('breadcrumbs');
         $this->setupTemplate($request);
         $context = $request->getContext();
-
-        //        $breadcrumbs[] = [
-        //            'id' => 'contexts',
-        //            'name' => __('invitation.userAndRoles'),
-        //            'url' => $request
-        //                ->getDispatcher()
-        //                ->url(
-        //                    $request,
-        //                    PKPApplication::ROUTE_PAGE,
-        //                    $request->getContext()->getPath(),
-        //                    'management',
-        //                    'settings',
-        //                    'access'
-        //                )
-        //        ];
-        //        $breadcrumbs[] = [
-        //            'id' => 'contexts',
-        //            'name' => __('invitation.users'),
-        //            'url' => $request
-        //                ->getDispatcher()
-        //                ->url(
-        //                    $request,
-        //                    PKPApplication::ROUTE_PAGE,
-        //                    $request->getContext()->getPath(),
-        //                    'management',
-        //                    'settings',
-        //                    'access'
-        //                )
-        //        ];
         $breadcrumbs[] = [
-            'id' => 'wizard',
-            'name' => __('manager.settings.wizard'),
+            'id' => 'contexts',
+            'name' => __('navigation.access'),
+            'url' => $request
+                ->getDispatcher()
+                ->url(
+                    $request,
+                    PKPApplication::ROUTE_PAGE,
+                    $request->getContext()->getPath(),
+                    'management',
+                    'settings',
+                )
+        ];
+        $breadcrumbs[] = [
+            'id' => 'invitationWizard',
+            'name' => __('invitation.wizard.pageTitle'),
         ];
         $invitationPayload = [
             'userId' => null,
@@ -189,7 +155,7 @@ class InvitationHandler extends Handler
                     'emailTemplates'
                 ),
             'primaryLocale' => $context->getData('primaryLocale'),
-            'invitationType' => 'RoleUpdateForNewUser',
+            'invitationType' => 'userRoleAssignment',
             'invitationPayload' => $invitationPayload,
             'pageTitle' => __('invitation.wizard.pageTitle'),
             'pageTitleDescription' => __('invitation.wizard.pageTitleDescription'),
@@ -200,169 +166,5 @@ class InvitationHandler extends Handler
             'pageWidth' => TemplateManager::PAGE_WIDTH_FULL,
         ]);
         $templateMgr->display('/invitation/userInvitation.tpl');
-
-    }
-
-    /**
-     * get user account create steps
-     */
-    protected function getAcceptSteps(Request $request, $invitation, $context): array
-    {
-        $apiUrl = $this->getAcceptInvitationApiUrl($request, $invitation);
-
-        $steps = [];
-        //        if($invitation->userId) {
-        //            $steps[] = $this->verifyOrcid();
-        //            $steps[] = $this->userCreateReview($invitation, $context);
-        //        } else {
-        $steps[] = $this->verifyOrcid();
-        $steps[] = $this->userCreate();
-        //            $steps[] = $this->getAcceptUserDetailsForm($request, $apiUrl, $invitation);
-        $steps[] = $this->userCreateReview($invitation, $context);
-        //        }
-
-
-        return $steps;
-    }
-    /**
-     * Get the state for the user orcid verification
-     */
-    protected function verifyOrcid(): array
-    {
-        $sections = [
-            [
-                'id' => 'userVerifyOrcid',
-                'sectionComponent' => 'AcceptInvitationVerifyOrcid'
-            ]
-        ];
-        return [
-            'id' => 'verifyOrcid',
-            'name' => __('invitation.verifyOrcid'),
-            'reviewName' => '',
-            'stepName' => __('invitation.verifyOrcidStep'),
-            'stepButtonName' => __('invitation.verifyOrcidStep.button'),
-            'type' => 'popup',
-            'description' => __('invitation.verifyOrcidDescription'),
-            'sections' => $sections,
-        ];
-    }
-
-    /**
-     * create username and password for ojs account
-     */
-    protected function userCreate(): array
-    {
-        $sections = [
-            [
-                'id' => 'userCreateForm',
-                'sectionComponent' => 'AcceptInvitationCreateUserAccount'
-            ]
-        ];
-        return [
-            'id' => 'userCreate',
-            'name' => __('invitation.userCreate'),
-            'reviewName' => __('invitation.userCreateReviewName'),
-            'stepName' => __('invitation.userCreateStep'),
-            'stepButtonName' => __('invitation.userCreateStep.button'),
-            'type' => 'form',
-            'description' => __('invitation.userCreateDescription'),
-            'sections' => $sections,
-            'reviewData' => []
-        ];
-    }
-
-    protected function getAcceptUserDetailsForm(Request $request, string $apiUrl, $invitation): array
-    {
-        $localeNames = $request->getContext()->getSupportedFormLocaleNames();
-        $locales = [];
-        foreach ($localeNames as $key => $name) {
-            $locales[] = [
-                'key' => $key,
-                'label' => $name,
-            ];
-        }
-        $contactForm = new AcceptUserDetailsForm($apiUrl, $locales);
-        $sections = [
-            [
-                'id' => 'userCreateDetailsForm',
-                'type' => 'form',
-                'description' => $request->getContext()->getLocalizedData('detailsHelp'),
-                'form' => $contactForm->getConfig(),
-                'sectionComponent' => 'AcceptInvitationCreateUserForms'
-            ]
-        ];
-
-        return [
-            'id' => 'userDetails',
-            'name' => __('invitation.userCreateDetails'),
-            'reviewName' => __('invitation.userCreateDetailsReviewName'),
-            'stepName' => __('invitation.userCreateDetailStep'),
-            'stepButtonName' => __('invitation.userCreateDetailStep.button'),
-            'type' => 'form',
-            'description' => __('invitation.userCreateDetailsDescription'),
-            'sections' => $sections,
-        ];
-    }
-
-    /**
-     * create review all steps for create ojs account
-     */
-    protected function userCreateReview($invitation, $context): array
-    {
-        $rows = [];
-        //        foreach (json_decode($invitation->roles) as $role) {
-        //            $row = [
-        //                'user_group_id' => $role->user_group_id,
-        //                'user_group_name' => $this->getUserGroup($role->user_group_id)->getName($context->getData('primaryLocale')),
-        //                'start_date' => $role->start_date,
-        //                'end_date' => $role->end_date
-        //            ];
-        //            $rows[] = $row;
-        //        }
-        $sections = [
-            [
-                'id' => 'userCreateRoles',
-                'sectionComponent' => 'AcceptInvitationReview',
-                'type' => 'table',
-                'description' => '',
-                'rows' => $rows
-            ]
-        ];
-        return [
-            'id' => 'userCreateReview',
-            'name' => __('invitation.userCreateReview'),
-            'reviewName' => 'Roles',
-            'stepName' => __('invitation.userCreateReviewStep'),
-            'stepButtonName' => __('invitation.userCreateReviewStep.button'),
-            'type' => 'review',
-            'description' => __('invitation.userCreateReviewDescription'),
-            'sections' => $sections,
-        ];
-    }
-
-    /**
-     * Get the url to the create user API endpoint
-     * or if user already in the system get accept invitation
-     * API endpoint
-     */
-    protected function getAcceptInvitationApiUrl(Request $request, $invitation): string
-    {
-        return $request
-            ->getDispatcher()
-            ->url(
-                $request,
-                PKPApplication::ROUTE_API,
-                $request->getContext()->getPath(),
-                'invitations/accept'
-            );
-    }
-
-    /**
-     * get user group by id
-     */
-
-    private function getUserGroup($userGroupId)
-    {
-        return Repo::userGroup()->get($userGroupId);
     }
 }

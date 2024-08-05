@@ -36,12 +36,6 @@ class Form extends Section
         $config->visibleLocales = $this->form->getConfig()['visibleLocales'];
         $config->supportedFormLocales = $this->form->getConfig()['supportedFormLocales'];
         $config->errors = $this->form->getConfig()['errors'];
-        ;
-
-        //        dd($this->form->getConfig()['id']);
-        // Decision forms shouldn't have submit buttons
-        // because the step-by-step decision wizard includes
-        // next/previous buttons
         unset($config->pages[0]['submitButton']);
 
         return $config;
