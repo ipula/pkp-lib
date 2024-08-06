@@ -97,7 +97,7 @@ abstract class Invitation
         $this->invitationModel->save();
     }
 
-    public array $propertyType = [];
+    protected array $propertyType = [];
     protected function fillFromPayload()
     {
         if ($this->invitationModel->payload) {

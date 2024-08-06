@@ -51,6 +51,8 @@ class UserRoleAssignmentCreateController extends CreateInvitationController
     {
         $reqInput = $illuminateRequest->all();
         $payload = $reqInput['invitationData'];
+        // $userId = $illuminateRequest->input('userId');
+        // $email = $illuminateRequest->input('email');
 
         $context = $this->request->getContext();
         $inviter = $this->request->getUser();
@@ -73,10 +75,14 @@ class UserRoleAssignmentCreateController extends CreateInvitationController
         $this->invitation->fillFromArgs($payload);
 
         $userGroupsToAdd = $payload['userGroupsToAdd'];
-        $this->invitation->updateUserGroupArray($this->invitation->userGroupsToAdd, $userGroupsToAdd);
+        if (isset($userGroupsToAdd)) {
+            $this->invitation->updateUserGroupArray($this->invitation->userGroupsToAdd, $userGroupsToAdd);
+        }
 
         $userGroupsToRemove = $payload['userGroupsToRemove'];
-        $this->invitation->updateUserGroupArray($this->invitation->userGroupsToRemove, $userGroupsToRemove);
+        if (isset($userGroupsToRemove)) {
+            $this->invitation->updateUserGroupArray($this->invitation->userGroupsToRemove, $userGroupsToRemove);
+        }
 
         $this->invitation->updatePayload();
 
