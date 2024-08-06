@@ -14,20 +14,19 @@
 
 namespace PKP\core;
 
-use Carbon\Carbon;
-use PKP\user\User;
-use APP\facades\Repo;
-use DateTimeInterface;
-use PKP\core\Registry;
 use APP\core\Application;
-use PKP\security\Validation;
-use InvalidArgumentException;
+use APP\facades\Repo;
+use Carbon\Carbon;
+use DateTimeInterface;
 use Illuminate\Auth\SessionGuard;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Date;
-use Illuminate\Contracts\Session\Session;
-use Symfony\Component\HttpFoundation\Cookie;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Contracts\Session\Session;
+use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
+use PKP\security\Validation;
+use PKP\user\User;
+use Symfony\Component\HttpFoundation\Cookie;
 
 class PKPSessionGuard extends SessionGuard
 {
@@ -110,7 +109,7 @@ class PKPSessionGuard extends SessionGuard
 
         $this->session->put([
             'signedInAs' => $this->getUserId(),
-            'password_hash_'.$auth->getDefaultDriver() => $user->getPassword(),
+            'password_hash_' . $auth->getDefaultDriver() => $user->getPassword(),
         ]);
 
         $this
@@ -128,7 +127,7 @@ class PKPSessionGuard extends SessionGuard
 
         $this->session->forget('signedInAs');
 
-        $this->session->put('password_hash_'.$auth->getDefaultDriver(), $user->getPassword());
+        $this->session->put('password_hash_' . $auth->getDefaultDriver(), $user->getPassword());
 
         $this
             ->setUserDataToSession($user)
@@ -143,7 +142,7 @@ class PKPSessionGuard extends SessionGuard
     {
         $this->setUserId($user->getId());
         $this->session->put('username', $user->getUsername());
-        $this->session->put('email',    $user->getEmail());
+        $this->session->put('email', $user->getEmail());
 
         return $this;
     }
@@ -182,12 +181,12 @@ class PKPSessionGuard extends SessionGuard
     /**
      * Update session cookie based in the response
      */
-    public function updateSessionCookieToResponse(Session $session = null): void
-    {   
+    public function updateSessionCookieToResponse(?Session $session = null): void
+    {
         $session ??= $this->getSession();
         $headerCookies = [];
 
-        $config = app()->get("config")["session"];
+        $config = app()->get('config')['session'];
 
         /** @var \Illuminate\Http\Response $response */
         $response = app()->get(\Illuminate\Http\Response::class);
@@ -199,27 +198,27 @@ class PKPSessionGuard extends SessionGuard
         }
 
         $cookie = new Cookie(
-            name: $session->getName(), 
-            value: $session->getId(), 
+            name: $session->getName(),
+            value: $session->getId(),
             expire: $this->getCookieExpirationDate($config),
-            path: $config['path'], 
-            domain: $config['domain'], 
+            path: $config['path'],
+            domain: $config['domain'],
             secure: $config['secure'] ?? false,
-            httpOnly: $config['http_only'] ?? true, 
-            raw: false, 
+            httpOnly: $config['http_only'] ?? true,
+            raw: false,
             sameSite: $config['same_site'] ?? null
         );
 
-        $headerCookies[] = $session->getName().'='.$session->getId();
+        $headerCookies[] = $session->getName() . '=' . $session->getId();
         $response->headers->setCookie($cookie);
-        
+
         // Set remember me cookie
         $cookieJar = $this->getCookieJar(); /** @var \Illuminate\Cookie\CookieJar $cookieJar */
-        if ( ($rememberCookie = $cookieJar->queued($this->getRecallerName())) ) {
+        if (($rememberCookie = $cookieJar->queued($this->getRecallerName()))) {
             $response->headers->setCookie($rememberCookie);
             $headerCookies[] = $rememberCookie->getName() . '=' . $rememberCookie->getValue();
         }
-        
+
         // update response header cookie values in formar [name=value]
         $response->headers->set('cookie', $headerCookies);
 
@@ -241,7 +240,7 @@ class PKPSessionGuard extends SessionGuard
         $response = app()->get(\Illuminate\Http\Response::class); /** @var \Illuminate\Http\Response $response */
 
         foreach ($response->headers->getCookies() as $cookie) {
-            header('Set-Cookie: '.$cookie, false, $response->getStatusCode() ?? 0);
+            header('Set-Cookie: ' . $cookie, false, $response->getStatusCode() ?? 0);
         }
     }
 
@@ -251,7 +250,7 @@ class PKPSessionGuard extends SessionGuard
      * @param int       $userId                 The user id for which session data need to be removed
      * @param string    $excludableSessionId    The session id which should be kept
      */
-    public function invalidateOtherSessions(int $userId, string $excludableSessionId = null): void
+    public function invalidateOtherSessions(int $userId, ?string $excludableSessionId = null): void
     {
         DB::table('sessions')
             ->where($this->provider->createUserInstance()->getAuthIdentifierName(), $userId)
@@ -279,10 +278,10 @@ class PKPSessionGuard extends SessionGuard
             throw new InvalidArgumentException('The given password does not match the current password.');
         }
 
-        return tap($this->user, function(&$user) use ($password, $rehash) {
+        return tap($this->user, function (&$user) use ($password, $rehash) {
             $rehash ??= Validation::encryptCredentials($user->getUsername(), $password);
             $user->setPassword($rehash);
-            
+
             $auth = app()->get('auth'); /** @var \PKP\core\PKPAuthManager $auth */
             Application::get()->getRequest()->getSession()->put([
                 'password_hash_' . $auth->getDefaultDriver() => $rehash,

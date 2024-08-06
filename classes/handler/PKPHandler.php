@@ -24,9 +24,9 @@ use APP\template\TemplateManager;
 use Illuminate\Support\Str;
 use PKP\config\Config;
 use PKP\core\Dispatcher;
+use PKP\core\PKPSessionGuard;
 use PKP\core\Registry;
 use PKP\db\DBResultRange;
-use PKP\core\PKPSessionGuard;
 use PKP\security\authorization\AllowedHostsPolicy;
 use PKP\security\authorization\AuthorizationDecisionManager;
 use PKP\security\authorization\AuthorizationPolicy;
@@ -644,7 +644,7 @@ class PKPHandler
         $router = $request->getRouter();
         $requestedPath = $router->getRequestedContextPath($request);
 
-        if ($requestedPath === 'index' || $requestedPath === '') {
+        if ($requestedPath === Application::SITE_CONTEXT_PATH || $requestedPath === '') {
             // No context requested. Check how many contexts the site has.
             $contextDao = Application::getContextDAO();
             $contexts = $contextDao->getAll(true);

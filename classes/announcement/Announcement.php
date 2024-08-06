@@ -101,8 +101,7 @@ class Announcement extends \PKP\core\DataObject
     public function getAnnouncementTypeName()
     {
         $announcementTypeDao = DAORegistry::getDAO('AnnouncementTypeDAO'); /** @var AnnouncementTypeDAO $announcementTypeDao */
-        $announcementType = $announcementTypeDao->getById($this->getData('typeId'));
-        return $announcementType ? $announcementType->getLocalizedTypeName() : null;
+        return $this->getData('typeId') ? $announcementTypeDao->getById($this->getData('typeId'))?->getLocalizedTypeName() : null;
     }
 
     /**
@@ -311,7 +310,7 @@ class Announcement extends \PKP\core\DataObject
 
         $filename = $image['uploadName'];
         if ($withTimestamp) {
-            $filename .= '?'. strtotime($image['dateUploaded']);
+            $filename .= '?' . strtotime($image['dateUploaded']);
         }
 
         $publicFileManager = new PublicFileManager();

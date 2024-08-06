@@ -15,6 +15,7 @@
 namespace PKP\invitation\models;
 
 use Carbon\Carbon;
+use Eloquence\Behaviours\HasCamelCasing;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
@@ -25,6 +26,7 @@ use PKP\invitation\core\enums\InvitationStatus;
 class InvitationModel extends Model
 {
     use InteractsWithTime;
+    use HasCamelCasing;
 
     /**
      * Model's database table
@@ -75,79 +77,18 @@ class InvitationModel extends Model
     ];
 
     protected $visible = [
-        'invitation_id',
+        'id',
         'status',
         'createdAt',
         'updatedAt',
-        'user_id',
-        'context_id',
-        'expiry_date',
+        'userId',
+        'contextId',
+        'expiryDate',
         'email',
         'inviter_id'
     ];
 
-    public function keyHash(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($user, $attributes) => $attributes['key_hash'],
-            set: fn ($value) => ['key_hash' => $value]
-        );
-    }
 
-    public function userId(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($user, $attributes) => $attributes['user_id'],
-            set: fn ($value) => ['user_id' => $value]
-        );
-    }
-
-    public function email(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($user, $attributes) => $attributes['email'],
-            set: fn ($value) => ['email' => $value]
-        );
-    }
-
-    public function expiryDate(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($user, $attributes) => new Carbon($attributes['expiry_date']),
-            set: fn ($value) => ['expiry_date' => $value]
-        );
-    }
-
-    public function updatedAt(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($user, $attributes) => new Carbon($attributes['updated_at']),
-            set: fn ($value) => ['updated_at' => $value]
-        );
-    }
-
-    public function createdAt(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($user, $attributes) => new Carbon($attributes['created_at']),
-            set: fn ($value) => ['created_at' => $value]
-        );
-    }
-
-    public function contextId(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($user, $attributes) => $attributes['context_id'],
-            set: fn ($value) => ['context_id' => $value]
-        );
-    }
-    public function type(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($user, $attributes) => $attributes['type'],
-            set: fn ($value) => ['type' => $value]
-        );
-    }
     public function id(): Attribute
     {
         return Attribute::make(
@@ -267,7 +208,7 @@ class InvitationModel extends Model
     public function markAs(InvitationStatus $status): bool
     {
         $this->status = $status;
-        $this->updated_at = Carbon::now();
+        $this->updatedAt = Carbon::now();
 
         return $this->save();
     }

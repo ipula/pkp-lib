@@ -45,9 +45,14 @@ class Config
         ],
         'email' => [
             'smtp_password',
+            'smtp_username',
         ],
         'security' => [
             'api_key_secret',
+            'salt',
+        ],
+        'captcha' => [
+            'recaptcha_private_key',
         ],
     ];
 
@@ -62,7 +67,7 @@ class Config
 
         return in_array($key, static::SENSITIVE_DATA[$section]);
     }
-    
+
     /**
      * Retrieve a specified configuration variable.
      *
@@ -164,7 +169,6 @@ class Config
     /**
      * Retrieve whether the specified configuration variable is defined, even if it's null.
      *
-     * @return bool
      */
     public static function hasVar(string $section, string $key): bool
     {

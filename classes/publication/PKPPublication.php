@@ -19,12 +19,10 @@
 namespace PKP\publication;
 
 use APP\author\Author;
-use APP\core\Services;
 use APP\facades\Repo;
 use PKP\core\Core;
 use PKP\core\PKPString;
 use PKP\facades\Locale;
-use PKP\i18n\LocaleMetadata;
 use PKP\services\PKPSchemaService;
 use PKP\userGroup\UserGroup;
 
@@ -447,13 +445,13 @@ class PKPPublication extends \PKP\core\DataObject
     /**
      * Get languages from locale, metadata, and authors' props.
      * Include optional additional languages.
-     * 
+     *
      * Publication: locale, multilingual metadata props
      * Authors: multilingual props
      */
     public function getLanguages(?array ...$additionalLocales): array
     {
-        $getMProps = fn (string $schema): array => Services::get('schema')->getMultilingualProps($schema);
+        $getMProps = fn (string $schema): array => app()->get('schema')->getMultilingualProps($schema);
         $metadataprops = $getMProps(PKPSchemaService::SCHEMA_PUBLICATION);
         $authorProps = $getMProps(PKPSchemaService::SCHEMA_AUTHOR);
 

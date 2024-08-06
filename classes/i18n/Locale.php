@@ -31,8 +31,8 @@ use InvalidArgumentException;
 use PKP\config\Config;
 use PKP\core\Core;
 use PKP\core\PKPRequest;
-use PKP\facades\Repo;
 use PKP\core\PKPSessionGuard;
+use PKP\facades\Repo;
 use PKP\i18n\interfaces\LocaleInterface;
 use PKP\i18n\translation\LocaleBundle;
 use PKP\i18n\ui\UITranslator;
@@ -153,7 +153,7 @@ class Locale implements LocaleInterface
 
         $this->locale = $locale;
         setlocale(LC_ALL, 'C.utf8', 'C');
-        \Locale::setDefault(\Locale::lookup(ResourceBundle::getLocales(''), $locale, true));
+        //        \Locale::setDefault(\Locale::lookup(ResourceBundle::getLocales(''), $locale, true));
     }
 
     /**
@@ -383,7 +383,7 @@ class Locale implements LocaleInterface
     /**
      * @copy LocaleInterface::getFormattedDisplayNames()
      */
-    public function getFormattedDisplayNames(array $filterByLocales = null, array $locales = null, int $langLocaleStatus = LocaleMetadata::LANGUAGE_LOCALE_WITH, bool $omitLocaleCodeInDisplay = true): array
+    public function getFormattedDisplayNames(?array $filterByLocales = null, ?array $locales = null, int $langLocaleStatus = LocaleMetadata::LANGUAGE_LOCALE_WITH, bool $omitLocaleCodeInDisplay = true): array
     {
         $locales ??= $this->getLocales();
 
@@ -436,7 +436,7 @@ class Locale implements LocaleInterface
             ->when($convDispLocale !== 'en', fn ($sln) => $sln->map(function ($nameEn, $l) use ($convDispLocale) {
                 $cl = $this->convertSubmissionLocaleCode($l);
                 $dn = locale_get_display_name($cl, $convDispLocale);
-                return ($dn && $dn !== $cl) ? $dn : "*$nameEn";
+                return ($dn && $dn !== $cl) ? $dn : "*{$nameEn}";
             }))
             ->toArray();
     }
@@ -457,7 +457,7 @@ class Locale implements LocaleInterface
      *
      * @return  array The list of locales with formatted display name
      */
-    protected function getFilteredLocales(array $locales, array $filterByLocales = null): array
+    protected function getFilteredLocales(array $locales, ?array $filterByLocales = null): array
     {
         if (!$filterByLocales) {
             return $locales;
@@ -538,7 +538,7 @@ class Locale implements LocaleInterface
     /**
      * Retrieves the ISO codes factory
      */
-    private function _getIsoCodes(string $locale = null): IsoCodesFactory
+    private function _getIsoCodes(?string $locale = null): IsoCodesFactory
     {
         return app(IsoCodesFactory::class, $locale ? ['locale' => $locale] : []);
     }
@@ -571,7 +571,7 @@ class Locale implements LocaleInterface
             $file = Core::getBaseDir() . '/' . PKP_LIB_PATH . '/lib/weblateLanguages/languages.json';
             $key = __METHOD__ . self::MAX_SUBMISSION_LOCALES_CACHE_LIFETIME . filemtime($file);
             $expiration = DateInterval::createFromDateString(self::MAX_SUBMISSION_LOCALES_CACHE_LIFETIME);
-            return Cache::remember($key, $expiration, fn (): array =>  collect($this->getLocales())
+            return Cache::remember($key, $expiration, fn (): array => collect($this->getLocales())
                 ->map(function (LocaleMetadata $lm, string $l): string {
                     $cl = $this->convertSubmissionLocaleCode($l);
                     $n = locale_get_display_name($cl, 'en');

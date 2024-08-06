@@ -14,7 +14,6 @@
 namespace PKP\jats;
 
 use APP\core\Application;
-use APP\core\Services;
 use APP\facades\Repo;
 use APP\plugins\generic\jatsTemplate\classes\Article;
 use Exception;
@@ -23,7 +22,6 @@ use PKP\file\FileManager;
 use PKP\jats\exceptions\UnableToCreateJATSContentException;
 use PKP\submissionFile\SubmissionFile;
 use Throwable;
-
 
 class Repository
 {
@@ -61,7 +59,7 @@ class Repository
             ->getCollector()
             ->filterByFileStages([SubmissionFile::SUBMISSION_FILE_JATS])
             ->filterByAssoc(Application::ASSOC_TYPE_PUBLICATION, [$publicationId]);
-        
+
         if ($submissionId) {
             $submissionFileQuery = $submissionFileQuery->filterBySubmissionIds([$submissionId]);
         }
@@ -71,15 +69,15 @@ class Repository
             ->first();
 
         return new JatsFile(
-            $publicationId, 
-            $submissionId, 
-            $submissionFile, 
+            $publicationId,
+            $submissionId,
+            $submissionFile,
             $genres
         );
     }
 
     /**
-     * Returns the name of the file that will contain the default JATS content 
+     * Returns the name of the file that will contain the default JATS content
      */
     public function getDefaultJatsFileName(int $publicationId): string
     {
@@ -96,7 +94,7 @@ class Repository
         $publication = Repo::publication()->get($publicationId, $submissionId);
         $submission = Repo::submission()->get($publication->getData('submissionId'));
 
-        $context = Services::get('context')->get($submission->getData('contextId'));
+        $context = app()->get('context')->get($submission->getData('contextId'));
         $section = Repo::section()->get($submission->getSectionId());
 
         $issue = null;
@@ -119,12 +117,11 @@ class Repository
     public function addJatsFile(
         string $fileTmpName,
         string $fileName,
-        int $publicationId, 
-        ?int $submissionId = null, 
+        int $publicationId,
+        ?int $submissionId = null,
         int $type = SubmissionFile::SUBMISSION_FILE_JATS,
         array $params = []
-    ): JatsFile
-    {
+    ): JatsFile {
         $publication = Repo::publication()->get($publicationId, $submissionId);
         $submission = Repo::submission()->get($publication->getData('submissionId'));
 
@@ -150,7 +147,7 @@ class Repository
                 $submission->getId()
             );
 
-        $fileId = Services::get('file')->add(
+        $fileId = app()->get('file')->add(
             $fileTmpName,
             $submissionDir . '/' . uniqid() . '.' . $extension
         );
@@ -167,7 +164,7 @@ class Repository
         $params['name'][$primaryLocale] = $fileName;
 
         if (empty($params['genreId'])) {
-        
+
             [$firstGenre, $secondGenre] = [$genres->next(), $genres->next()];
             if ($firstGenre && !$secondGenre) {
                 $params['genreId'] = $firstGenre->getId();
@@ -186,8 +183,8 @@ class Repository
             );
 
         if (!empty($errors)) {
-            Services::get('file')->delete($fileId);
-            throw new Exception(''. implode(', ', $errors));
+            app()->get('file')->delete($fileId);
+            throw new Exception('' . implode(', ', $errors));
         }
 
         $submissionFile = Repo::submissionFile()
@@ -203,7 +200,7 @@ class Repository
     }
 
     /**
-     * Given a submission and a publication this function returns the JATS XML contents provided by the 
+     * Given a submission and a publication this function returns the JATS XML contents provided by the
      * submission/publication metadata
      *
      * @throws \PKP\jats\exceptions\UnableToCreateJATSContentException If the default JATS creation fails
@@ -231,9 +228,9 @@ class Repository
      *
      * Valid file stages should be passed through
      * the hook SubmissionFile::fileStages.
-     * @return array
      */
-    public function getFileStages(): array {
+    public function getFileStages(): array
+    {
         return [SubmissionFile::SUBMISSION_FILE_JATS];
     }
 }

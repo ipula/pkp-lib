@@ -210,12 +210,11 @@ class ControlledVocabEntryDAO extends \PKP\db\DAO
      * requested symbolic (eg - keywords/subjects)
      *
      * @param string $symbolic One of the CONTROLLED_VOCAB_* constants
-     * @param int $contextId
      * @param string $locale
      *
      * @return DAOResultFactory<ControlledVocabEntry>
      */
-    public function getByContextId($symbolic, $contextId, $locale, ?string $term = null)
+    public function getByContextId($symbolic, int $contextId, $locale, ?string $term = null)
     {
         $params = [
             $symbolic,

@@ -17,7 +17,6 @@
 namespace PKP\controllers\grid\languages\form;
 
 use APP\core\Application;
-use APP\core\Services;
 use APP\template\TemplateManager;
 use PKP\facades\Locale;
 use PKP\form\Form;
@@ -54,7 +53,7 @@ class AddLanguageForm extends Form
         $templateMgr = TemplateManager::getManager($request);
         $templateMgr->assign([
             'availableLocales' => collect(Locale::getSubmissionLocaleDisplayNames())
-                ->map(fn ($name, $localeCode) => "[ $localeCode ] $name"),
+                ->map(fn ($name, $localeCode) => "[ {$localeCode} ] {$name}"),
             'addedLocales' => $request->getContext()->getSupportedAddedSubmissionLocales(),
         ]);
 
@@ -101,7 +100,7 @@ class AddLanguageForm extends Form
                     ->values()
                     ->toArray();
 
-                Services::get('context')->edit(
+                app()->get('context')->edit(
                     $context,
                     [
                         'supportedAddedSubmissionLocales' => $locales,
