@@ -49,7 +49,7 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
         'userGroupsToRemove',
     ];
 
-    public array $propertyType = [
+    protected array $propertyType = [
         'userGroupsToAdd' => UserUserGroup::class,
         'userGroupsToRemove' => UserUserGroup::class,
     ];

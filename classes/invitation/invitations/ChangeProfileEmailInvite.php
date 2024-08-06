@@ -18,7 +18,7 @@ use APP\core\Application;
 use APP\facades\Repo;
 use Exception;
 use Illuminate\Mail\Mailable;
-use PKP\identity\Identity;
+use PKP\facades\Locale;
 use PKP\invitation\core\contracts\IBackofficeHandleable;
 use PKP\invitation\core\enums\InvitationAction;
 use PKP\invitation\core\enums\InvitationStatus;
@@ -55,36 +55,45 @@ class ChangeProfileEmailInvite extends Invitation implements IBackofficeHandleab
 
     public function getMailable(): Mailable
     {
-        $user = Repo::user()->get($this->invitationModel->userId);
-        $sendIdentity = new Identity();
-        $sendIdentity->setFamilyName($user->getFamilyName(null), null);
-        $sendIdentity->setGivenName($user->getGivenName(null), null);
-        $sendIdentity->setEmail($this->newEmail);
+        $request = Application::get()->getRequest();
+
+        $receiver = $this->getMailableReceiver();
 
         $mailable = new ChangeProfileEmailInvitationNotify();
-        $mailable->recipients([$sendIdentity]);
-        $mailable->sender($user);
+        $mailable->recipients([$receiver]);
+        $mailable->sender($request->getUser());
 
-        $request = Application::get()->getRequest();
-        $site = $request->getSite();
-        $sitePrimaryLocale = $site->getPrimaryLocale();
+        $context = $request->getContext();
 
-        $emailTemplate = Repo::emailTemplate()->getByKey(Application::SITE_CONTEXT_ID, $mailable::getEmailTemplateKey());
-        $mailable->subject($emailTemplate->getLocalizedData('subject', $sitePrimaryLocale))
-            ->body($emailTemplate->getLocalizedData('body', $sitePrimaryLocale));
+        $contextId = 1;
+        $locale = Locale::getLocale();
+        $contactName = '';
+        if (isset($context)) {
+            $contextId = $context->getId();
+            $locale = $context->getPrimaryLocale();
+            $contactName = $context->getContactName();
+        } else {
+            $site = $request->getSite();
+            $contactName = $site->getData('contactName');
+        }
 
-        $mailable->setData($sitePrimaryLocale);
+        $emailTemplate = Repo::emailTemplate()->getByKey($contextId, $mailable::getEmailTemplateKey());
+        $mailable->subject($emailTemplate->getLocalizedData('subject', $locale))
+            ->body($emailTemplate->getLocalizedData('body', $locale));
+
+        $mailable->setData($locale);
 
         $this->setMailable($mailable);
 
         $acceptUrl = $this->getActionURL(InvitationAction::ACCEPT);
         $declineUrl = $this->getActionURL(InvitationAction::DECLINE);
 
-        $this->mailable->buildViewDataUsing(function () use ($acceptUrl, $declineUrl) {
+        $this->mailable->buildViewDataUsing(function () use ($acceptUrl, $declineUrl, $contactName) {
             return [
                 'acceptInvitationUrl' => $acceptUrl,
                 'declineInvitationUrl' => $declineUrl,
-                'newEmail' => $this->newEmail
+                'newEmail' => $this->newEmail,
+                'siteContactName' => $contactName
             ];
         });
 
