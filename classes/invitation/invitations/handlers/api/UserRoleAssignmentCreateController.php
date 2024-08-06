@@ -50,13 +50,15 @@ class UserRoleAssignmentCreateController extends CreateInvitationController
      */
     public function add(Request $illuminateRequest): JsonResponse 
     {
-        $userId = $illuminateRequest->input('userId');
-        $email = $illuminateRequest->input('email');
+        $reqInput = $illuminateRequest->all();
+        $payload = $reqInput['invitationData'];
+        // $userId = $illuminateRequest->input('userId');
+        // $email = $illuminateRequest->input('email');
 
         $context = $this->request->getContext();
         $inviter = $this->request->getUser();
 
-        $this->invitation->initialize($userId, $context->getId(), $email, $inviter->getId());
+        $this->invitation->initialize($payload['userId'], $context->getId(), $payload['email'], $inviter->getId());
 
         return response()->json([
             'invitationId' => $this->invitation->getId()
