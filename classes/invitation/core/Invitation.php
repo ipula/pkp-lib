@@ -55,28 +55,37 @@ abstract class Invitation
         $this->fillFromPayload();
     }
 
-    public function initialize(?int $userId = null, ?int $contextId = null, ?string $email = null)
+    public function initialize(?int $userId = null, ?int $contextId = null, ?string $email = null, ?int $inviterId = null)
     {
-        if ((!isset($userId) && !isset($email)) || (isset($userId) && isset($email))) {
+        if (!isset($userId) && !isset($email)) {
             throw new Exception("Invitation should contain the user id or an invited email.')");
         }
 
+        $userIdUsed = null;
+        $emailUsed = null;
+        if (isset($userId)) {
+            $userIdUsed = $userId;
+        } else {
+            $emailUsed = $email;
+        }
+
         InvitationModel::byStatus(InvitationStatus::INITIALIZED)
-            ->when($userId !== null, function ($query) use ($userId) {
-                return $query->byUserId($userId);
+            ->when($userIdUsed !== null, function ($query) use ($userIdUsed) {
+                return $query->byUserId($userIdUsed);
             })
             ->when($contextId !== null, function ($query) use ($contextId) {
                 return $query->byContextId($contextId);
             })
-            ->when($email !== null, function ($query) use ($email) {
-                return $query->byEmail($email);
+            ->when($emailUsed !== null, function ($query) use ($emailUsed) {
+                return $query->byEmail($emailUsed);
             })
             ->byType($this->getType())
             ->delete();
 
-        $this->invitationModel->userId = $userId;
+        $this->invitationModel->userId = $userIdUsed;
         $this->invitationModel->contextId = $contextId;
-        $this->invitationModel->email = $email;
+        $this->invitationModel->email = $emailUsed;
+        $this->invitationModel->inviterId = $inviterId;
 
         $this->invitationModel->status = InvitationStatus::INITIALIZED;
 
@@ -187,8 +196,9 @@ abstract class Invitation
 
     public function setExpiryDate(Carbon $expiryDate)
     {
-        if ($this->getStatus() !== InvitationStatus::INITIALIZED) {+
-            throw new Exception('Can not change expiry date at this stage');
+        if ($this->getStatus() !== InvitationStatus::INITIALIZED) {
+            +
+                throw new Exception('Can not change expiry date at this stage');
         }
 
         $this->invitationModel->expiryDate = $expiryDate;

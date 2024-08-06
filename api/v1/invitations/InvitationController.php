@@ -216,7 +216,7 @@ class InvitationController extends PKPBaseController
 
             $this->selectedHandler->authorize($this, $request, $args, $roleAssignments);
         }
-        
+
 
         return parent::authorize($request, $args, $roleAssignments);
     }
@@ -265,7 +265,10 @@ class InvitationController extends PKPBaseController
     {
         $context = $illuminateRequest->attributes->get('context'); /** @var \PKP\context\Context $context */
         $invitationType = $this->getParameter(self::PARAM_TYPE);
-        
+
+        $count = $illuminateRequest->query('count', 10); // default count to 10 if not provided
+        $offset = $illuminateRequest->query('offset', 0); // default offset to 0 if not provided
+
         $invitations = InvitationModel::query()
             ->when($invitationType, function ($query, $invitationType) {
                 return $query->byType($invitationType);
@@ -274,15 +277,17 @@ class InvitationController extends PKPBaseController
                 return $query->byContextId($context->getId());
             })
             ->stillActive()
+            ->skip($offset)
+            ->take($count)
             ->get();
 
         $finalCollection = $invitations->map(function ($invitation) {
             return Repo::invitation()->getById($invitation->id);
         });
 
-        return response()->json(
-            $finalCollection, 
-            Response::HTTP_OK
-        );
+        return response()->json([
+            'itemsMax' => InvitationModel::query()->stillActive()->count(),
+            'items' => $finalCollection,
+        ], Response::HTTP_OK);
     }
 }

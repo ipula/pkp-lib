@@ -53,8 +53,9 @@ class UserRoleAssignmentCreateController extends CreateInvitationController
         $payload = $reqInput['invitationData'];
 
         $context = $this->request->getContext();
+        $inviter = $this->request->getUser();
 
-        $this->invitation->initialize($payload['userId'], $context->getId(), $payload['email']);
+        $this->invitation->initialize($payload['userId'], $context->getId(), $payload['email'], $inviter->getId());
 
         return response()->json([
             'invitationId' => $this->invitation->getId()

@@ -52,8 +52,8 @@ class UserRoleAssignmentInvitationNotify extends Mailable
     ];
 
     protected static string $recipientName = 'recipientName';
-    protected static string $inviteeName = 'inviteeName';
-    protected static string $inviteeRole = 'inviteeRole';
+    protected static string $inviterName = 'inviterName';
+    protected static string $inviterRole = 'inviterRole';
     protected static string $rolesAdded = 'rolesAdded';
     protected static string $rolesAddedDetails = 'rolesAddedDetails';
     protected static string $rolesRemoved = 'rolesRemoved';
@@ -78,8 +78,8 @@ class UserRoleAssignmentInvitationNotify extends Mailable
         $variables = parent::getDataDescriptions();
 
         $variables[static::$recipientName] = __('emailTemplate.variable.invitation.recipientName');
-        $variables[static::$inviteeName] = __('emailTemplate.variable.invitation.inviteeName');
-        $variables[static::$inviteeRole] = __('emailTemplate.variable.invitation.inviteeRole');
+        $variables[static::$inviterName] = __('emailTemplate.variable.invitation.inviterName');
+        $variables[static::$inviterRole] = __('emailTemplate.variable.invitation.inviterRole');
         $variables[static::$rolesAdded] = __('emailTemplate.variable.invitation.rolesAdded');
         $variables[static::$rolesAddedDetails] = __('emailTemplate.variable.invitation.rolesAddedDetails');
         $variables[static::$rolesRemoved] = __('emailTemplate.variable.invitation.rolesRemoved');
@@ -115,9 +115,9 @@ class UserRoleAssignmentInvitationNotify extends Mailable
             $sendIdentity->setEmail($this->invitation->invitationModel->email);
         }
 
-        // Invitee
+        // Inviter
         $request = Application::get()->getRequest();
-        $invitee = $request->getUser();
+        $inviter = $request->getUser();
 
         $contextDao = Application::getContextDAO();
         $context = $contextDao->getById($this->invitation->invitationModel->contextId);
@@ -162,7 +162,7 @@ class UserRoleAssignmentInvitationNotify extends Mailable
 
         // Existing Roles
         $existingUserGroups = '';
-        $user = Repo::user()->get(1);
+
         if (isset($user)) {
             $existingUserGroups = '<p><h2>Already assigned roles</h2></p>';
 
@@ -211,7 +211,7 @@ class UserRoleAssignmentInvitationNotify extends Mailable
             $this->viewData,
             [
                 static::$recipientName => $sendIdentity->getFullName(),
-                static::$inviteeName => $invitee->getFullName(),
+                static::$inviterName => $inviter->getFullName(),
                 static::$acceptUrl => $this->invitation->getActionURL(InvitationAction::ACCEPT),
                 static::$declineUrl => $this->invitation->getActionURL(InvitationAction::DECLINE),
                 static::$rolesAdded => $userGroupsAdded,

@@ -85,44 +85,38 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
 
     public function getMailable(): Mailable
     {
+        $contextDao = Application::getContextDAO();
+        $context = $contextDao->getById($this->invitationModel->contextId);
+        $locale = $context->getPrimaryLocale();
+
+        // Define the Mailable
+        $mailable = new UserRoleAssignmentInvitationNotify($context, $this);
+        $mailable->setData($locale);
+
+        // Set the email send data
+        $emailTemplate = Repo::emailTemplate()->getByKey($context->getId(), $mailable::getEmailTemplateKey());
+
+        $inviter = Repo::user()->get($this->invitationModel->inviterId);
+
         $sendIdentity = new Identity();
+        $user = null;
         if ($this->invitationModel->userId) {
             $user = Repo::user()->get($this->invitationModel->userId);
 
-            $sendIdentity->setFamilyName($user->getFamilyName(null), null);
-            $sendIdentity->setGivenName($user->getGivenName(null), null);
+            $sendIdentity->setFamilyName($user->getFamilyName($locale), $locale);
+            $sendIdentity->setGivenName($user->getGivenName($locale), $locale);
             $sendIdentity->setEmail($user->getEmail());
         } else {
-            $sendIdentity->setFamilyName($this->familyName, null);
-            $sendIdentity->setGivenName($this->givenName, null);
+            $sendIdentity->setFamilyName($this->familyName, $locale);
+            $sendIdentity->setGivenName($this->givenName, $locale);
             $sendIdentity->setEmail($this->invitationModel->email);
         }
 
-        $request = Application::get()->getRequest();
-        $contextDao = Application::getContextDAO();
-        $context = $contextDao->getById($this->invitationModel->contextId);
-
-        $mailable = new UserRoleAssignmentInvitationNotify($context, $this);
-        $mailable->recipients([$sendIdentity]);
-        $mailable->sender($request->getUser());
-
-        $site = $request->getSite();
-        $sitePrimaryLocale = $site->getPrimaryLocale();
-
-        $emailTemplate = Repo::emailTemplate()->getByKey(Application::CONTEXT_ID_NONE, $mailable::getEmailTemplateKey());
-
-        if (!isset($this->emailSubject)) {
-            $this->emailSubject = $emailTemplate->getLocalizedData('subject', $sitePrimaryLocale);
-        }
-
-        if (!isset($this->emailBody)) {
-            $this->emailBody = $emailTemplate->getLocalizedData('body', $sitePrimaryLocale);
-        }
-
-        $mailable->subject($this->emailSubject)
-            ->body($this->emailBody);
-
-        $mailable->setData($sitePrimaryLocale);
+        $mailable
+            ->sender($inviter)
+            ->recipients([$sendIdentity])
+            ->subject($emailTemplate->getLocalizedData('subject', $locale))
+            ->body($emailTemplate->getLocalizedData('body', $locale));
 
         $this->setMailable($mailable);
 
@@ -147,10 +141,6 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
             })
             ->byContextId($this->invitationModel->contextId)
             ->delete();
-
-        // foreach($pendingInvitations as $pendingInvitation) {
-        //     $pendingInvitation->markAs(InvitationStatus::DECLINED);
-        // }
     }
 
     public function finalize(): void

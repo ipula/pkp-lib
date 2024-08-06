@@ -24,14 +24,16 @@ class SendInvitationStep extends InvitationStepTypes
      */
     public function getSteps(?Invitation $invitation, Context $context): array
     {
-        $invitedEmail = $this->invitationInvitedEmail($context);
-        $searchUser = $this->invitationSearchUser();
-        $detailsForm = $this->invitationDetailsForm($context);
-        return [
-            $searchUser,
-            $detailsForm,
-            $invitedEmail
-        ];
+        $steps = [];
+        if($invitation) {
+            $steps[] = $this->invitationDetailsForm($context);
+            $steps[] = $this->invitationInvitedEmail($context);
+        } else {
+            $steps[] = $this->invitationSearchUser();
+            $steps[] = $this->invitationDetailsForm($context);
+            $steps[] = $this->invitationInvitedEmail($context);
+        }
+        return $steps;
     }
 
     /**

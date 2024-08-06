@@ -233,7 +233,7 @@ class EditorAction
 
         if ($context->getData('reviewerAccessKeysEnabled')) {
             $reviewInvitation = new ReviewerAccessInvite();
-            $reviewInvitation->initialize($reviewAssignment->getReviewerId(), $context->getId(), null);
+            $reviewInvitation->initialize($reviewAssignment->getReviewerId(), $context->getId(), null, $sender->getId());
 
             $reviewInvitation->reviewAssignmentId = $reviewAssignment->getId();
             $reviewInvitation->updatePayload();

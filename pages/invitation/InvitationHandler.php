@@ -70,6 +70,17 @@ class InvitationHandler extends Handler
         return $invitation;
     }
 
+    private function getInvitationById(Request $request, $id): Invitation
+    {
+        $invitation = Repo::invitation()
+            ->getById($id);
+
+        if (is_null($invitation)) {
+            $request->getDispatcher()->handle404();
+        }
+        return $invitation;
+    }
+
     public static function getActionUrl(InvitationAction $action, Invitation $invitation): ?string
     {
         $invitationId = $invitation->getId();
@@ -97,29 +108,9 @@ class InvitationHandler extends Handler
             );
     }
 
-    public function send($args, $request): void
+    public function invite($args, $request): void
     {
-        $templateMgr = TemplateManager::getManager($request);
-        $breadcrumbs = $templateMgr->getTemplateVars('breadcrumbs');
-        $this->setupTemplate($request);
-        $context = $request->getContext();
-        $breadcrumbs[] = [
-            'id' => 'contexts',
-            'name' => __('navigation.access'),
-            'url' => $request
-                ->getDispatcher()
-                ->url(
-                    $request,
-                    PKPApplication::ROUTE_PAGE,
-                    $request->getContext()->getPath(),
-                    'management',
-                    'settings',
-                )
-        ];
-        $breadcrumbs[] = [
-            'id' => 'invitationWizard',
-            'name' => __('invitation.wizard.pageTitle'),
-        ];
+        $invitationId = null;
         $invitationPayload = [
             'userId' => null,
             'email' => '',
@@ -143,9 +134,46 @@ class InvitationHandler extends Handler
                 'subject' => '',
             ]
         ];
+        $invitation = null;
+        if(!empty($args)) {
+            $invitation = $this->getInvitationById($request, $args[0]);
+            $invitationId = $invitation->invitationModel->invitation_id;
+            $invitationPayload['userId'] = $invitation->invitationModel->userId;
+            $invitationPayload['email'] = $invitation->invitationModel->email;
+            $invitationPayload['orcid'] = $invitation->orcid;
+            $invitationPayload['givenName'] = $invitation->givenName;
+            $invitationPayload['familyName'] = $invitation->familyName;
+            $invitationPayload['affiliation'] = $invitation->affiliation;
+            $invitationPayload['country'] = $invitation->country;
+            $invitationPayload['userGroupsToAdd'] = $invitation->userGroupsToAdd;
+            $invitationPayload['currentUserGroups'] = !$invitation->currentUserGroups ? [] : $invitation->currentUserGroups;
+            $invitationPayload['userGroupsToRemove'] = $invitation->userGroupsToRemove;
+            $invitationPayload['emailComposer'] = $invitation->emailComposer;
+        }
+        $templateMgr = TemplateManager::getManager($request);
+        $breadcrumbs = $templateMgr->getTemplateVars('breadcrumbs');
+        $this->setupTemplate($request);
+        $context = $request->getContext();
+        $breadcrumbs[] = [
+            'id' => 'contexts',
+            'name' => __('navigation.access'),
+            'url' => $request
+                ->getDispatcher()
+                ->url(
+                    $request,
+                    PKPApplication::ROUTE_PAGE,
+                    $request->getContext()->getPath(),
+                    'management',
+                    'settings',
+                )
+        ];
+        $breadcrumbs[] = [
+            'id' => 'invitationWizard',
+            'name' => __('invitation.wizard.pageTitle'),
+        ];
         $steps = new SendInvitationStep();
         $templateMgr->setState([
-            'steps' => $steps->getSteps(null, $context),
+            'steps' => $steps->getSteps($invitation, $context),
             'emailTemplatesApiUrl' => $request
                 ->getDispatcher()
                 ->url(
@@ -156,6 +184,7 @@ class InvitationHandler extends Handler
                 ),
             'primaryLocale' => $context->getData('primaryLocale'),
             'invitationType' => 'userRoleAssignment',
+            'invitationId' => $invitationId,
             'invitationPayload' => $invitationPayload,
             'pageTitle' => __('invitation.wizard.pageTitle'),
             'pageTitleDescription' => __('invitation.wizard.pageTitleDescription'),

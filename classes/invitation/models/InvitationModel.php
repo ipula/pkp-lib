@@ -75,9 +75,9 @@ class InvitationModel extends Model
     ];
 
     protected $visible = [
-        'invitation_id',  
-        'status', 
-        'createdAt', 
+        'invitation_id',
+        'status',
+        'createdAt',
         'updatedAt',
         'user_id',
         'context_id',
@@ -167,7 +167,7 @@ class InvitationModel extends Model
     public function inviterId(): Attribute
     {
         return Attribute::make(
-            get: fn ($user, $attributes) => InvitationStatus::from($attributes['inviter_id']),
+            get: fn ($user, $attributes) => $attributes['inviter_id'],
             set: fn ($value) => ['inviter_id' => $value]
         );
     }
@@ -259,7 +259,7 @@ class InvitationModel extends Model
     {
         // Apply the NotExpired scope
         $query->notExpired();
-        
+
         // Apply the NotHandled scope
         return $query->notHandled();
     }
@@ -268,13 +268,13 @@ class InvitationModel extends Model
     {
         $this->status = $status;
         $this->updated_at = Carbon::now();
-        
+
         return $this->save();
     }
 
     /**
      * Mark all invitations with a given status.
-     * 
+     *
      */
     public static function markAllAs(InvitationStatus $status, Collection $ids): int
     {
