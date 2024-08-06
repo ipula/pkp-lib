@@ -26,42 +26,42 @@ use PKPRequest;
 
 class UserRoleAssignmentReceiveController extends ReceiveInvitationController
 {
-    public function __construct(public UserRoleAssignmentInvite $invitation) 
+    public function __construct(public UserRoleAssignmentInvite $invitation)
     {
     }
-    
+
     /**
      * @inheritDoc
      */
-    public function authorize(PKPBaseController $controller, PKPRequest $request, array &$args, array $roleAssignments): bool 
+    public function authorize(PKPBaseController $controller, PKPRequest $request, array &$args, array $roleAssignments): bool
     {
         return true;
     }
-    
+
     /**
      * @inheritDoc
      */
-    public function decline(Request $illuminateRequest): JsonResponse 
+    public function decline(Request $illuminateRequest): JsonResponse
     {
         $this->invitation->decline();
 
         return response()->json(Response::HTTP_OK);
     }
-    
+
     /**
      * @inheritDoc
      */
-    public function finalize(Request $illuminateRequest): JsonResponse 
+    public function finalize(Request $illuminateRequest): JsonResponse
     {
         $this->invitation->finalize();
 
         return response()->json(Response::HTTP_OK);
     }
-    
+
     /**
      * @inheritDoc
      */
-    public function receive(Request $illuminateRequest): JsonResponse 
+    public function receive(Request $illuminateRequest): JsonResponse
     {
         $contextDao = Application::getContextDAO();
         $context = $contextDao->getById($this->invitation->invitationModel->contextId);
@@ -83,15 +83,15 @@ class UserRoleAssignmentReceiveController extends ReceiveInvitationController
         }
 
         return response()->json(
-            $this->invitation, 
+            $this->invitation,
             Response::HTTP_OK
         );
     }
-    
+
     /**
      * @inheritDoc
      */
-    public function refine(Request $illuminateRequest): JsonResponse 
+    public function refine(Request $illuminateRequest): JsonResponse
     {
         $reqInput = $illuminateRequest->all();
         $payload = $reqInput['invitationData'];
@@ -109,13 +109,13 @@ class UserRoleAssignmentReceiveController extends ReceiveInvitationController
             ];
 
             return response()->json(
-                $response, 
+                $response,
                 Response::HTTP_UNPROCESSABLE_ENTITY
             );
         }
 
         return response()->json(
-            $this->invitation, 
+            $this->invitation,
             Response::HTTP_OK
         );
     }
