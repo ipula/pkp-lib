@@ -74,10 +74,14 @@ class UserRoleAssignmentCreateController extends CreateInvitationController
         $this->invitation->fillFromArgs($payload);
 
         $userGroupsToAdd = $payload['userGroupsToAdd'];
-        $this->invitation->updateUserGroupArray($this->invitation->userGroupsToAdd, $userGroupsToAdd);
+        if (isset($userGroupsToAdd)) {
+            $this->invitation->updateUserGroupArray($this->invitation->userGroupsToAdd, $userGroupsToAdd);
+        }
 
         $userGroupsToRemove = $payload['userGroupsToRemove'];
-        $this->invitation->updateUserGroupArray($this->invitation->userGroupsToRemove, $userGroupsToRemove);
+        if (isset($userGroupsToRemove)) {
+            $this->invitation->updateUserGroupArray($this->invitation->userGroupsToRemove, $userGroupsToRemove);
+        }
 
         $this->invitation->updatePayload();
 

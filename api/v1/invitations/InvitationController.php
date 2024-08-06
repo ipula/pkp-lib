@@ -269,15 +269,18 @@ class InvitationController extends PKPBaseController
         $count = $illuminateRequest->query('count', 10); // default count to 10 if not provided
         $offset = $illuminateRequest->query('offset', 0); // default offset to 0 if not provided
         
-        $invitations = InvitationModel::query()
+        $query = InvitationModel::query()
             ->when($invitationType, function ($query, $invitationType) {
                 return $query->byType($invitationType);
             })
             ->when($context, function ($query, $context) {
                 return $query->byContextId($context->getId());
             })
-            ->stillActive()
-            ->skip($offset)
+            ->stillActive();
+        
+        $maxCount = $query->count();
+
+        $invitations = $query->skip($offset)
             ->take($count)
             ->get();
 
@@ -286,7 +289,7 @@ class InvitationController extends PKPBaseController
         });
 
         return response()->json([
-            'itemsMax' => $invitations->count(),
+            'itemsMax' => $maxCount,
             'items' => $finalCollection,
         ], Response::HTTP_OK);
     }
