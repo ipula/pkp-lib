@@ -35,6 +35,7 @@ use PKP\invitation\models\InvitationModel;
 use PKP\mail\mailables\UserRoleAssignmentInvitationNotify;
 use PKP\security\Validation;
 use PKP\userGroup\relationships\enums\UserUserGroupMastheadStatus;
+use PKP\userGroup\relationships\UserUserGroup;
 
 class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
 {
@@ -46,6 +47,11 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
     protected array $notAccessibleAfterInvite = [
         'userGroupsToAdd',
         'userGroupsToRemove',
+    ];
+
+    public array $propertyType = [
+        'userGroupsToAdd' => UserUserGroup::class,
+        'userGroupsToRemove' => UserUserGroup::class,
     ];
 
     protected array $notAccessibleBeforeInvite = [
@@ -65,7 +71,14 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
     public ?string $emailBody = null;
     public ?bool $existingUser = null;
 
+    /**
+     * @var UserUserGroup[]
+     */
     public array $userGroupsToAdd = [];
+
+    /**
+     * @var UserUserGroup[]
+     */
     public array $userGroupsToRemove = [];
 
     public static function getType(): string
@@ -96,31 +109,31 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
         // Set the email send data
         $emailTemplate = Repo::emailTemplate()->getByKey($context->getId(), $mailable::getEmailTemplateKey());
 
-        $inviter = Repo::user()->get($this->invitationModel->inviterId);
+        $inviter = $this->getInviter();
 
-        $sendIdentity = new Identity();
-        $user = null;
-        if ($this->invitationModel->userId) {
-            $user = Repo::user()->get($this->invitationModel->userId);
-
-            $sendIdentity->setFamilyName($user->getFamilyName($locale), $locale);
-            $sendIdentity->setGivenName($user->getGivenName($locale), $locale);
-            $sendIdentity->setEmail($user->getEmail());
-        } else {
-            $sendIdentity->setFamilyName($this->familyName, $locale);
-            $sendIdentity->setGivenName($this->givenName, $locale);
-            $sendIdentity->setEmail($this->invitationModel->email);
-        }
+        $reciever = $this->getMailableReceiver($locale);
 
         $mailable
             ->sender($inviter)
-            ->recipients([$sendIdentity])
+            ->recipients([$reciever])
             ->subject($emailTemplate->getLocalizedData('subject', $locale))
             ->body($emailTemplate->getLocalizedData('body', $locale));
 
         $this->setMailable($mailable);
 
         return $this->mailable;
+    }
+
+    public function getMailableReceiver(?string $locale = null): Identity
+    {
+        $locale = $this->getUsedLocale($locale);
+
+        $receiver = parent::getMailableReceiver($locale);
+
+        $receiver->setFamilyName($this->familyName, $locale);
+        $receiver->setGivenName($this->givenName, $locale);
+
+        return $receiver;
     }
 
     protected function preInviteActions(): void
@@ -178,20 +191,20 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
             }
         }
 
-        foreach ($this->userGroupsToRemove as $userGroupData) {
+        foreach ($this->userGroupsToRemove as $userUserGroup) {
             Repo::userGroup()-> deleteAssignmentsByUserId(
                 $user->getId(),
-                $userGroupData['userGroup']
+                $userUserGroup->userGroupId
             );
         }
 
-        foreach ($this->userGroupsToAdd as $userGroupData) {
+        foreach ($this->userGroupsToAdd as $userUserGroup) {
             Repo::userGroup()->assignUserToGroup(
                 $user->getId(),
-                $userGroupData['userGroup'],
-                $userGroupData['dateStart'],
-                $userGroupData['dateEnd'],
-                isset($userGroupData['masthead']) && $userGroupData['masthead']
+                $userUserGroup->userGroupId,
+                $userUserGroup->dateStart,
+                $userUserGroup->dateEnd,
+                isset($userUserGroup->masthead) && $userUserGroup->masthead
                     ? UserUserGroupMastheadStatus::STATUS_ON
                     : UserUserGroupMastheadStatus::STATUS_OFF
             );
@@ -221,53 +234,29 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
         return new UserRoleAssignmentReceiveController($invitation);
     }
 
-    public function updateUserGroupArray(array &$userGroupArray, array $userGroupsToAdd)
+    public function updateUserGroupArray(array &$userGroupArray, array $userUserGroupsToAdd): void
     {
-        if (is_array($userGroupsToAdd) && !empty($userGroupsToAdd)) {
-            foreach ($userGroupsToAdd as $group) {
-                if (isset($group['userGroup'])) {
-                    $this->removeUserGroup($userGroupArray, $group['userGroup']);
-                    $this->addUserGroup($userGroupArray, $group);
+        if (is_array($userUserGroupsToAdd) && !empty($userUserGroupsToAdd)) {
+            $userGroupArray = [];
+            foreach ($userUserGroupsToAdd as $userGroupData) {
+                if ($userGroupData['userGroup']) {
+                    $newUserUserGroup = new UserUserGroup([
+                        'userGroupId' => $userGroupData['userGroup'],
+                        'dateStart' => $userGroupData['dateStart'],
+                        'dateEnd' => $userGroupData['dateEnd'],
+                        'masthead' => $userGroupData['masthead']
+                    ]);
+
+                    $this->addUserGroup($userGroupArray, $newUserUserGroup);
                 }
             }
         }
     }
 
-    private function addUserGroup(array &$userGroupArray, array $userGroup)
+    private function addUserGroup(array &$userGroupArray, UserUserGroup $userUserGroup)
     {
-        // $userGroup['userGroupObject'] = Repo::userGroup()->get($userGroup['userGroup']);
-        $userGroupArray[] = $userGroup;
+        $userGroupArray[] = $userUserGroup;
     }
-
-    private function removeUserGroup(array &$userGroupArray, int $userGroupId)
-    {
-        $userGroupArray = array_filter($userGroupArray, function ($group) use ($userGroupId) {
-            return $group['userGroup'] != $userGroupId;
-        });
-
-        // Re-index the array to maintain a consistent array structure
-        $userGroupArray = array_values($userGroupArray);
-    }
-
-    // public function toJsonArray(): array
-    // {
-    //     $data = [
-    //         'userId' => $this->invitationModel->userId,
-    //         'email' => $this->invitationModel->email,
-    //         'payload' => $this->invitationModel->paylod,
-    //         'orcid' => $this->orcid,
-    //         'givenName' => $this->givenName,
-    //         'familyName' => $this->familyName,
-    //         'affiliationName' => $this->affiliation,
-    //         'country' => $this->country,
-    //         'emailSubject' => $this->emailSubject,
-    //         'emailBody' => $this->emailBody,
-    //         'userGroupsToAdd' => $this->userGroupsToAdd,
-    //         'userGroupsToRemove' => $this->userGroupsToRemove,
-    //     ];
-
-    //     return $data;
-    // }
 
     /**
      * @inheritDoc

@@ -85,7 +85,7 @@ class InvitationModel extends Model
         'contextId',
         'expiryDate',
         'email',
-        'inviter_id'
+        'inviterId'
     ];
 
 
@@ -150,9 +150,11 @@ class InvitationModel extends Model
      */
     public function scopeByUserId(Builder $query, ?int $userId): Builder
     {
-        return $query->when($userId, function ($query, $userId) {
-            return $query->where('user_id', '=', $userId);
-        })->orWhereNull('user_id');
+        return $query->when($userId !== null, function ($query) use ($userId) {
+            return $query->where('user_id', $userId);
+        }, function ($query) {
+            return $query->whereNull('user_id');
+        });
     }
 
     /**
@@ -160,9 +162,11 @@ class InvitationModel extends Model
      */
     public function scopeByEmail(Builder $query, ?string $email): Builder
     {
-        return $query->when($email, function ($query, $email) {
-            return $query->where('email', '=', $email);
-        })->orWhereNull('email');
+        return $query->when($email !== null, function ($query) use ($email) {
+            return $query->where('email', $email);
+        }, function ($query) {
+            return $query->whereNull('email');
+        });
     }
 
     /**
@@ -170,9 +174,11 @@ class InvitationModel extends Model
      */
     public function scopeByContextId(Builder $query, ?int $contextId): Builder
     {
-        return $query->when($contextId, function ($query, $contextId) {
-            return $query->where('context_id', '=', $contextId);
-        })->orWhereNull('context_id');
+        return $query->when($contextId !== null, function ($query) use ($contextId) {
+            return $query->where('context_id', $contextId);
+        }, function ($query) {
+            return $query->whereNull('contextId');
+        });
     }
 
     /**

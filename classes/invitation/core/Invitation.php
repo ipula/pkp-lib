@@ -14,10 +14,14 @@
 
 namespace PKP\invitation\core;
 
+use APP\core\Application;
+use APP\facades\Repo;
 use Carbon\Carbon;
 use Exception;
+use Identity;
 use Illuminate\Support\Facades\Mail;
 use PKP\config\Config;
+use PKP\context\Context;
 use PKP\invitation\core\enums\InvitationAction;
 use PKP\invitation\core\enums\InvitationStatus;
 use PKP\invitation\core\traits\HasMailable;
@@ -25,6 +29,7 @@ use PKP\invitation\core\traits\ShouldValidate;
 use PKP\invitation\models\InvitationModel;
 use PKP\pages\invitation\InvitationHandler;
 use PKP\security\Validation;
+use PKP\user\User;
 use ReflectionClass;
 use ReflectionProperty;
 use Symfony\Component\Mailer\Exception\TransportException;
@@ -69,7 +74,7 @@ abstract class Invitation
             $emailUsed = $email;
         }
 
-        InvitationModel::byStatus(InvitationStatus::INITIALIZED)
+        $query = InvitationModel::byStatus(InvitationStatus::INITIALIZED)
             ->when($userIdUsed !== null, function ($query) use ($userIdUsed) {
                 return $query->byUserId($userIdUsed);
             })
@@ -92,12 +97,23 @@ abstract class Invitation
         $this->invitationModel->save();
     }
 
+    public array $propertyType = [];
     protected function fillFromPayload()
     {
         if ($this->invitationModel->payload) {
             foreach ($this->invitationModel->payload as $key => $value) {
                 if (property_exists($this, $key)) {
-                    $this->{$key} = $value;
+                    if (property_exists($this, 'propertyType') && !empty($this->propertyType) && array_key_exists($key, $this->propertyType)) {
+                        if (is_array($value)) {
+                            $this->{$key} = array_map(function ($item) use ($key) {
+                                return new $this->propertyType[$key]($item);
+                            }, $value);
+                        } else {
+                            $this->{$key} = new $this->propertyType[$key]($value);
+                        }
+                    } else {
+                        $this->{$key} = $value;
+                    }
                 }
             }
         }
@@ -173,11 +189,6 @@ abstract class Invitation
         return $this->notAccessibleAfterInvite;
     }
 
-    public function getPropertyClassMap(): array
-    {
-        return $this->propertyClassMap;
-    }
-
     public function getPayloadAccessibleProperties(): array
     {
         return $this->payloadAccessibleProperties;
@@ -234,6 +245,61 @@ abstract class Invitation
         $this->invitationModel->save();
 
         return true;
+    }
+
+    public function getInviter(): ?User
+    {
+        if (!isset($this->invitationModel->inviterId)) {
+            return null;
+        }
+
+        return Repo::user()->get($this->invitationModel->inviterId);
+    }
+
+    public function getContext(): ?Context
+    {
+        if (!isset($this->invitationModel->contextId)) {
+            return null;
+        }
+
+        $contextDao = Application::getContextDAO();
+        return $contextDao->getById($this->invitationModel->contextId);
+    }
+
+    public function getMailableReceiver(?string $locale = null): Identity
+    {
+        $locale = $this->getUsedLocale($locale);
+
+        $sendIdentity = new Identity();
+        $user = null;
+        if ($this->invitationModel->userId) {
+            $user = Repo::user()->get($this->invitationModel->userId);
+
+            $sendIdentity->setFamilyName($user->getFamilyName($locale), $locale);
+            $sendIdentity->setGivenName($user->getGivenName($locale), $locale);
+            $sendIdentity->setEmail($user->getEmail());
+        } else {
+            $sendIdentity->setEmail($this->invitationModel->email);
+        }
+
+        return $sendIdentity;
+    }
+
+    public function getUsedLocale(?string $locale = null): string
+    {
+        if (isset($locale)) {
+            return $locale;
+        }
+
+        if (isset($this->invitationModel->contextId)) {
+            $contextDao = Application::getContextDAO();
+            $context = $contextDao->getById($this->invitationModel->contextId);
+            return $context->getPrimaryLocale();
+        }
+
+        $request = Application::get()->getRequest();
+        $site = $request->getSite();
+        return $site->getPrimaryLocale();
     }
 
     private static function makeKeyHash($key): string
@@ -314,5 +380,20 @@ abstract class Invitation
     protected function getExpiryDays(): int
     {
         return (int) Config::getVar('invitations', 'expiration_days', self::DEFAULT_EXPIRY_DAYS);
+    }
+
+    public function getUserId(): ?int
+    {
+        return $this->invitationModel->userId;
+    }
+
+    public function getContextId(): ?int
+    {
+        return $this->invitationModel->contextId;
+    }
+
+    public function getEmail(): ?int
+    {
+        return $this->invitationModel->email;
     }
 }

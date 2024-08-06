@@ -14,12 +14,10 @@
 
 namespace PKP\mail\mailables;
 
-use APP\core\Application;
 use APP\facades\Repo;
 use PKP\context\Context;
 use PKP\core\Core;
 use PKP\facades\Locale;
-use PKP\identity\Identity;
 use PKP\invitation\core\enums\InvitationAction;
 use PKP\invitation\invitations\UserRoleAssignmentInvite;
 use PKP\mail\Mailable;
@@ -28,6 +26,7 @@ use PKP\mail\traits\Recipient;
 use PKP\mail\traits\Sender;
 use PKP\security\Role;
 use PKP\userGroup\relationships\UserUserGroup;
+use UserGroup;
 
 class UserRoleAssignmentInvitationNotify extends Mailable
 {
@@ -55,7 +54,6 @@ class UserRoleAssignmentInvitationNotify extends Mailable
     protected static string $inviterName = 'inviterName';
     protected static string $inviterRole = 'inviterRole';
     protected static string $rolesAdded = 'rolesAdded';
-    protected static string $rolesAddedDetails = 'rolesAddedDetails';
     protected static string $rolesRemoved = 'rolesRemoved';
     protected static string $existingRoles = 'existingRoles';
     protected static string $acceptUrl = 'acceptUrl';
@@ -81,7 +79,6 @@ class UserRoleAssignmentInvitationNotify extends Mailable
         $variables[static::$inviterName] = __('emailTemplate.variable.invitation.inviterName');
         $variables[static::$inviterRole] = __('emailTemplate.variable.invitation.inviterRole');
         $variables[static::$rolesAdded] = __('emailTemplate.variable.invitation.rolesAdded');
-        $variables[static::$rolesAddedDetails] = __('emailTemplate.variable.invitation.rolesAddedDetails');
         $variables[static::$rolesRemoved] = __('emailTemplate.variable.invitation.rolesRemoved');
         $variables[static::$existingRoles] = __('emailTemplate.variable.invitation.existingRoles');
         $variables[static::$acceptUrl] = __('emailTemplate.variable.invitation.acceptUrl');
@@ -89,6 +86,75 @@ class UserRoleAssignmentInvitationNotify extends Mailable
 
         return $variables;
     }
+
+    private function getAllUserUserGroupSection(array $userUserGroups, ?UserGroup $userGroup = null, Context $context, string $locale, string $title): string
+    {
+        $retString = '';
+
+        $count = 1;
+        foreach ($userUserGroups as $userUserGroup) {
+            if ($count == 1) {
+                $retString = $title;
+            }
+
+            if (!isset($userGroup)) {
+                $userGroup = Repo::userGroup()->get($userUserGroup->userGroupId);
+            }
+
+            $userGroupSection = $this->getUserUserGroupSection($userUserGroup, $userGroup, $context, $count, $locale);
+
+            $retString .= $userGroupSection;
+
+            $count++;
+        }
+
+        return $retString;
+    }
+
+    private function getUserUserGroupSection($userUserGroup, $userGroup, $context, $count, $locale): string
+    {
+        $sectionEndingDate = '';
+        if (isset($userGroupData['dateEnd'])) {
+            $sectionEndingDate = __(
+                'emails.userRoleAssignmentInvitationNotify.userGroupSectionEndingDate',
+                [
+                    'dateEnd' => $userUserGroup->dateEnd
+                ]
+            );
+        }
+
+        $sectionMastheadAppear = __(
+            'emails.userRoleAssignmentInvitationNotify.userGroupSectionWillNotAppear',
+            [
+                'contextName' => $context->getName($locale),
+                'sectionName' => $userGroup->getName($locale)
+            ]
+        );
+
+        if (isset($userUserGroup->masthead) && $userUserGroup->masthead) {
+            $sectionMastheadAppear = __(
+                'emails.userRoleAssignmentInvitationNotify.userGroupSectionWillAppear',
+                [
+                    'contextName' => $context->getName($locale),
+                    'sectionName' => $userGroup->getName($locale)
+                ]
+            );
+        }
+
+        $userGroupSection = __(
+            'emails.userRoleAssignmentInvitationNotify.userGroupSection',
+            [
+                'sectionNumber' => $count,
+                'sectionName' => $userGroup->getName($locale),
+                'dateStart' => $userUserGroup->dateStart,
+                'sectionEndingDate' => $sectionEndingDate,
+                'sectionMastheadAppear' => $sectionMastheadAppear
+            ]
+        );
+
+        return $userGroupSection;
+    }
+
 
     /**
      * Set localized email template variables
@@ -101,71 +167,35 @@ class UserRoleAssignmentInvitationNotify extends Mailable
         }
 
         // Invitation User
-        $sendIdentity = new Identity();
-        $user = null;
-        if ($this->invitation->invitationModel->userId) {
-            $user = Repo::user()->get($this->invitation->invitationModel->userId);
-
-            $sendIdentity->setFamilyName($user->getFamilyName($locale), $locale);
-            $sendIdentity->setGivenName($user->getGivenName($locale), $locale);
-            $sendIdentity->setEmail($user->getEmail());
-        } else {
-            $sendIdentity->setFamilyName($this->invitation->familyName, $locale);
-            $sendIdentity->setGivenName($this->invitation->givenName, $locale);
-            $sendIdentity->setEmail($this->invitation->invitationModel->email);
-        }
+        $sendIdentity = $this->invitation->getMailableReceiver($locale);
 
         // Inviter
-        $request = Application::get()->getRequest();
-        $inviter = $request->getUser();
+        $inviter = $this->invitation->getInviter();
 
-        $contextDao = Application::getContextDAO();
-        $context = $contextDao->getById($this->invitation->invitationModel->contextId);
+        $context = $this->invitation->getContext();
 
         // Roles Added
-        $userGroupsAdded = '';
-        $userGroupsAddedDetails = '<p><h2>Newly assigned roles</h2></p>';
+        $userGroupsAddedTitle = __('emails.userRoleAssignmentInvitationNotify.newlyAssignedRoles');
+        $userGroupsAdded = $this->getAllUserUserGroupSection($this->invitation->userGroupsToAdd, null, $context, $locale, $userGroupsAddedTitle);
 
-        $count = 1;
-        foreach ($this->invitation->userGroupsToAdd as $userGroupData) {
-            $userGroup = Repo::userGroup()->get($userGroupData['userGroup']);
-            $userGroupsAdded = $userGroupsAdded . ',' . $userGroup->getName($locale);
 
-            $userGroupSection = '<div class="section">
-                <div class="section-number">' . $count . '.</div>
-                <div class="section-content">
-                    <h2>' . $userGroup->getName($locale) . '</h2>
-                    <p>Starting from ' . $userGroupData['dateStart'] . '</p>';
-
-            if (isset($userGroupData['dateEnd'])) {
-                $userGroupSection = $userGroupSection . '<p>Ending at ' . $userGroupData['dateEnd'] . ' </p>';
-            }
-
-            if (isset($userGroupData['masthead']) && $userGroupData['masthead']) {
-                $userGroupSection = $userGroupSection . '<p>Your name will appear in the journal’s masthead as a ' . $userGroup->getName($locale) . '</p>';
-            } else {
-                $userGroupSection = $userGroupSection . '<p>Your name will not appear in ' . $context->getName($locale) . ' masthead</p>';
-            }
-
-            $userGroupSection = $userGroupSection . '</div></div>';
-
-            $userGroupsAddedDetails = $userGroupsAddedDetails . $userGroupSection;
-
-            $count++;
-        }
-
-        // Roles Removed
-        $userGroupsremoved = '';
-        foreach ($this->invitation->userGroupsToRemove as $userGroup) {
-            $userGroupsremoved = $userGroupsremoved . ',' . $userGroup['userGroup'];
-        }
-
-        // Existing Roles
+        $existingUserGroupsTitle = __('emails.userRoleAssignmentInvitationNotify.alreadyAssignedRoles');
+        $userGroupsremovedTitle = __('emails.userRoleAssignmentInvitationNotify.removedRoles');
         $existingUserGroups = '';
+        $userGroupsremoved = '';
 
         if (isset($user)) {
-            $existingUserGroups = '<p><h2>Already assigned roles</h2></p>';
+            // Roles Removed
+            foreach ($this->invitation->userGroupsToRemove as $userUserGroup) {
+                $userGroup = Repo::userGroup()->get($userUserGroup->userGroupId);
+                $userUserGroups = UserUserGroup::withUserId($user->getId())
+                    ->withUserGroupId($userGroup->getId())
+                    ->get();
 
+                $userGroupsremoved = $this->getAllUserUserGroupSection($userUserGroups, $userGroup, $context, $locale, $userGroupsremovedTitle);
+            }
+
+            // Existing Roles
             $userGroups = Repo::userGroup()->getCollector()
                 ->filterByContextIds([$this->invitation->invitationModel->contextId])
                 ->filterByUserIds([$user->getId()])
@@ -176,30 +206,7 @@ class UserRoleAssignmentInvitationNotify extends Mailable
                     ->withUserGroupId($userGroup->getId())
                     ->get();
 
-                $count = 1;
-                foreach ($userUserGroups as $userUserGroup) {
-                    $userGroupSection = '<div class="section">
-                        <div class="section-number">' . $count . '.</div>
-                        <div class="section-content">
-                            <h2>' . $userGroup->getName($locale) . '</h2>
-                            <p>Starting from ' . $userUserGroup->dateStart . '</p>';
-
-                    if (isset($userUserGroup->dateEnd)) {
-                        $userGroupSection = $userGroupSection . '<p>Ending at ' . $userUserGroup->dateEnd . ' </p>';
-                    }
-
-                    if (isset($userUserGroup->masthead) && $userUserGroup->masthead) {
-                        $userGroupSection = $userGroupSection . '<p>Your name will appear in ' . $context->getName($locale) . ' masthead as a ' . $userGroup->getName($locale) . '</p>';
-                    } else {
-                        $userGroupSection = $userGroupSection . '<p>Your name will not appear in ' . $context->getName($locale) . ' masthead</p>';
-                    }
-
-                    $userGroupSection = $userGroupSection . '</div></div>';
-
-                    $existingUserGroups = $existingUserGroups . $userGroupSection;
-
-                    $count++;
-                }
+                $existingUserGroups = $this->getAllUserUserGroupSection($userUserGroups, $userGroup, $context, $locale, $existingUserGroupsTitle);
             }
         }
 
@@ -215,11 +222,9 @@ class UserRoleAssignmentInvitationNotify extends Mailable
                 static::$acceptUrl => $this->invitation->getActionURL(InvitationAction::ACCEPT),
                 static::$declineUrl => $this->invitation->getActionURL(InvitationAction::DECLINE),
                 static::$rolesAdded => $userGroupsAdded,
-                static::$rolesAddedDetails => $userGroupsAddedDetails,
                 static::$rolesRemoved => $userGroupsremoved,
                 static::$existingRoles => $existingUserGroups,
-                'emailTemplateStyle' => $emailTemplateStyle,
-
+                static::EMAIL_TEMPLATE_STYLE_PROPERTY => $emailTemplateStyle,
             ]
         );
     }

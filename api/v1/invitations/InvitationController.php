@@ -286,7 +286,7 @@ class InvitationController extends PKPBaseController
         });
 
         return response()->json([
-            'itemsMax' => InvitationModel::query()->stillActive()->count(),
+            'itemsMax' => $invitations->count(),
             'items' => $finalCollection,
         ], Response::HTTP_OK);
     }
