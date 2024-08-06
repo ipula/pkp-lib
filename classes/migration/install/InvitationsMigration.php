@@ -31,8 +31,11 @@ class InvitationsMigration extends \PKP\migration\Migration
             $table->string('type', 255);
 
             $table->bigInteger('user_id')->nullable();
+            $table->bigInteger('inviter_id')->nullable();
             $table->foreign('user_id')->references('user_id')->on('users')->onDelete('cascade');
             $table->index(['user_id'], 'invitations_user_id');
+            $table->foreign('inviter_id')->references('user_id')->on('users')->onDelete('cascade');
+            $table->index(['inviter_id'], 'invitations_inviter_id');
 
             $table->datetime('expiry_date')->nullable();;
             $table->json('payload')->nullable();

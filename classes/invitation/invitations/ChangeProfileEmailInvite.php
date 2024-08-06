@@ -39,18 +39,18 @@ class ChangeProfileEmailInvite extends Invitation implements IBackofficeHandleab
 
     public $newEmail = null;
 
+    protected array $notAccessibleAfterInvite = [
+        'newEmail',
+    ];
+
     public static function getType(): string
     {
         return self::INVITATION_TYPE;
     }
 
-    public function getHiddenAfterDispatch(): array
+    public function getNotAccessibleAfterInvite(): array
     {
-        $baseHiddenItems = parent::getHiddenAfterDispatch();
-
-        $additionalHiddenItems = ['newEmail'];
-
-        return array_merge($baseHiddenItems, $additionalHiddenItems);
+        return array_merge(parent::getNotAccessibleAfterInvite(), $this->notAccessibleAfterInvite);
     }
 
     public function getMailable(): Mailable
@@ -91,7 +91,7 @@ class ChangeProfileEmailInvite extends Invitation implements IBackofficeHandleab
         return $this->mailable;
     }
 
-    protected function preDispatchActions(): void
+    protected function preInviteActions(): void
     {
         // Check if everything is in order regarding the properties
         if (!isset($this->newEmail)) {
@@ -109,7 +109,7 @@ class ChangeProfileEmailInvite extends Invitation implements IBackofficeHandleab
         }
     }
 
-    public function finalise(): void
+    public function finalize(): void
     {
         $user = Repo::user()->get($this->invitationModel->userId);
 
@@ -133,7 +133,7 @@ class ChangeProfileEmailInvite extends Invitation implements IBackofficeHandleab
     {
         if ($this->newEmail) {
             if (filter_var($this->newEmail, FILTER_VALIDATE_EMAIL) == false) {
-                $this->addError('The provided email is not in the correct form');
+                $this->addError('newEmail', 'The provided email is not in the correct form');
             }
         }
 

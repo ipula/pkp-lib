@@ -14,10 +14,14 @@
 
 namespace PKP\invitation\core;
 
+use APP\core\Application;
+use APP\facades\Repo;
 use Carbon\Carbon;
 use Exception;
+use Identity;
 use Illuminate\Support\Facades\Mail;
 use PKP\config\Config;
+use PKP\context\Context;
 use PKP\invitation\core\enums\InvitationAction;
 use PKP\invitation\core\enums\InvitationStatus;
 use PKP\invitation\core\traits\HasMailable;
@@ -25,6 +29,7 @@ use PKP\invitation\core\traits\ShouldValidate;
 use PKP\invitation\models\InvitationModel;
 use PKP\pages\invitation\InvitationHandler;
 use PKP\security\Validation;
+use PKP\user\User;
 use ReflectionClass;
 use ReflectionProperty;
 use Symfony\Component\Mailer\Exception\TransportException;
@@ -33,16 +38,16 @@ abstract class Invitation
 {
     public const DEFAULT_EXPIRY_DAYS = 3;
 
-    private string $key;
+    private ?string $key = null;
 
     public InvitationModel $invitationModel;
 
-    protected array $hiddenBeforeDispatch = [];
-    protected array $hiddenAfterDispatch = [];
+    protected array $notAccessibleBeforeInvite = [];
+    protected array $notAccessibleAfterInvite = [];
     protected array $payloadAccessibleProperties = [];
 
     abstract public static function getType(): string;
-    abstract protected function preDispatchActions(): void;
+    abstract protected function preInviteActions(): void;
     abstract public function getInvitationActionRedirectController(): ?InvitationActionRedirectController;
 
     public function __construct(?InvitationModel $invitationModel = null)
@@ -54,30 +59,74 @@ abstract class Invitation
         $this->fillFromPayload();
     }
 
-    public function initialize(?int $userId = null, ?int $contextId = null, ?string $email = null)
+    public function initialize(?int $userId = null, ?int $contextId = null, ?string $email = null, ?int $inviterId = null)
     {
         if (!isset($userId) && !isset($email)) {
-            throw new Exception("Invitation should contain at least one user id or an invited email')");
+            throw new Exception("Invitation should contain the user id or an invited email.')");
         }
 
-        $this->invitationModel->userId = $userId;
+        $userIdUsed = null;
+        $emailUsed = null;
+        if (isset($userId)) {
+            $userIdUsed = $userId;
+        } else {
+            $emailUsed = $email;
+        }
+
+        $query = InvitationModel::byStatus(InvitationStatus::INITIALIZED)
+            ->when($userIdUsed !== null, function ($query) use ($userIdUsed) {
+                return $query->byUserId($userIdUsed);
+            })
+            ->when($contextId !== null, function ($query) use ($contextId) {
+                return $query->byContextId($contextId);
+            })
+            ->when($emailUsed !== null, function ($query) use ($emailUsed) {
+                return $query->byEmail($emailUsed);
+            })
+            ->byType($this->getType())
+            ->delete();
+
+        $this->invitationModel->userId = $userIdUsed;
         $this->invitationModel->contextId = $contextId;
-        $this->invitationModel->email = $email;
+        $this->invitationModel->email = $emailUsed;
+        $this->invitationModel->inviterId = $inviterId;
 
         $this->invitationModel->status = InvitationStatus::INITIALIZED;
 
         $this->invitationModel->save();
     }
 
-    public function fillFromArgs(array $args)
+    public array $propertyType = [];
+    protected function fillFromPayload()
+    {
+        if ($this->invitationModel->payload) {
+            foreach ($this->invitationModel->payload as $key => $value) {
+                if (property_exists($this, $key)) {
+                    if (property_exists($this, 'propertyType') && !empty($this->propertyType) && array_key_exists($key, $this->propertyType)) {
+                        if (is_array($value)) {
+                            $this->{$key} = array_map(function ($item) use ($key) {
+                                return new $this->propertyType[$key]($item);
+                            }, $value);
+                        } else {
+                            $this->{$key} = new $this->propertyType[$key]($value);
+                        }
+                    } else {
+                        $this->{$key} = $value;
+                    }
+                }
+            }
+        }
+    }
+
+    public function fillFromArgs(array $args): void
     {
         foreach ($args as $propName => $value) {
             if ($this->getStatus() == InvitationStatus::INITIALIZED) {
-                if (in_array($propName, $hiddenBeforeDispatch)) {
+                if (in_array($propName, $this->notAccessibleBeforeInvite)) {
                     continue;
                 }
             } elseif ($this->getStatus() == InvitationStatus::PENDING) {
-                if (in_array($propName, $hiddenAfterDispatch)) {
+                if (in_array($propName, $this->notAccessibleAfterInvite)) {
                     continue;
                 }
             } else {
@@ -85,17 +134,8 @@ abstract class Invitation
             }
 
             if ($propName !== 'invitationModel' && property_exists($this, $propName)) {
-                $this->{$propName} = $value;
-            }
-        }
-    }
-
-    protected function fillFromPayload()
-    {
-        if ($this->invitationModel->payload) {
-            foreach ($this->invitationModel->payload as $key => $value) {
-                if (property_exists($this, $key)) {
-                    $this->{$key} = $value;
+                if (!is_array($this->{$propName})) {
+                    $this->{$propName} = $value;
                 }
             }
         }
@@ -128,7 +168,7 @@ abstract class Invitation
             }
         }
 
-        if (!$this->validatePayload($this->invitationModel->payload ?? [], $payload)) {
+        if (!$this->checkPayloadIntegrity($this->invitationModel->payload ?? [], $payload)) {
             return null;
         }
 
@@ -138,14 +178,14 @@ abstract class Invitation
         return $this->invitationModel->save();
     }
 
-    public function getHiddenBeforeDispatch(): array
+    public function getNotAccessibleBeforeInvite(): array
     {
-        return $this->hiddenBeforeDispatch;
+        return $this->notAccessibleBeforeInvite;
     }
 
-    public function getHiddenAfterDispatch(): array
+    public function getNotAccessibleAfterInvite(): array
     {
-        return $this->hiddenAfterDispatch;
+        return $this->notAccessibleAfterInvite;
     }
 
     public function getPayloadAccessibleProperties(): array
@@ -166,7 +206,7 @@ abstract class Invitation
 
     public function setExpiryDate(Carbon $expiryDate)
     {
-        if ($this->getStatus() !== InvitationStatus::INITIALIZED) {
+        if ($this->getStatus() !== InvitationStatus::INITIALIZED) {+
             throw new Exception('Can not change expiry date at this stage');
         }
 
@@ -180,7 +220,7 @@ abstract class Invitation
         }
 
         // Need to return error messages also?
-        $this->preDispatchActions();
+        $this->preInviteActions();
 
         $this->checkForKey();
 
@@ -205,7 +245,62 @@ abstract class Invitation
         return true;
     }
 
-    public static function makeKeyHash($key): string
+    public function getInviter(): ?User
+    {
+        if (!isset($this->invitationModel->inviterId)) {
+            return null;
+        }
+
+        return Repo::user()->get($this->invitationModel->inviterId);
+    }
+
+    public function getContext(): ?Context
+    {
+        if (!isset($this->invitationModel->contextId)) {
+            return null;
+        }
+
+        $contextDao = Application::getContextDAO();
+        return $contextDao->getById($this->invitationModel->contextId);
+    }
+
+    public function getMailableReceiver(?string $locale = null): Identity
+    {
+        $locale = $this->getUsedLocale($locale);
+
+        $sendIdentity = new Identity();
+        $user = null;
+        if ($this->invitationModel->userId) {
+            $user = Repo::user()->get($this->invitationModel->userId);
+            
+            $sendIdentity->setFamilyName($user->getFamilyName($locale), $locale);
+            $sendIdentity->setGivenName($user->getGivenName($locale), $locale);
+            $sendIdentity->setEmail($user->getEmail());
+        } else {
+            $sendIdentity->setEmail($this->invitationModel->email);
+        }
+
+        return $sendIdentity;
+    }
+
+    public function getUsedLocale(?string $locale = null): string
+    {
+        if (isset($locale)) {
+            return $locale;
+        }
+
+        if (isset($this->invitationModel->contextId)) {
+            $contextDao = Application::getContextDAO();
+            $context = $contextDao->getById($this->invitationModel->contextId);
+            return $context->getPrimaryLocale();
+        }
+
+        $request = Application::get()->getRequest();
+        $site = $request->getSite();
+        return $site->getPrimaryLocale();
+    }
+
+    private static function makeKeyHash($key): string
     {
         return password_hash($key, PASSWORD_BCRYPT);
     }
@@ -238,14 +333,14 @@ abstract class Invitation
         return InvitationHandler::getActionUrl($invitationAction, $this);
     }
 
-    public function validatePayload(array $initialPayload, array $modifiedPayload): bool
+    public function checkPayloadIntegrity(array $initialPayload, array $modifiedPayload): bool
     {
         $checkArray = null;
 
         if ($this->getStatus() == InvitationStatus::INITIALIZED) {
-            $checkArray = $this->getHiddenBeforeDispatch();
+            $checkArray = $this->getNotAccessibleBeforeInvite();
         } elseif ($this->getStatus() == InvitationStatus::PENDING) {
-            $checkArray = $this->getHiddenAfterDispatch();
+            $checkArray = $this->getNotAccessibleAfterInvite();
         } else {
             throw new Exception('You can not modify the Invitation in this stage');
         }
@@ -283,5 +378,20 @@ abstract class Invitation
     protected function getExpiryDays(): int
     {
         return (int) Config::getVar('invitations', 'expiration_days', self::DEFAULT_EXPIRY_DAYS);
+    }
+
+    public function getUserId(): ?int
+    {
+        return $this->invitationModel->userId;
+    }
+
+    public function getContextId(): ?int
+    {
+        return $this->invitationModel->contextId;
+    }
+
+    public function getEmail(): ?int
+    {
+        return $this->invitationModel->email;
     }
 }
