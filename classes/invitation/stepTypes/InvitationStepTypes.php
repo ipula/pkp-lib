@@ -4,7 +4,7 @@ namespace PKP\invitation\stepTypes;
 
 use PKP\context\Context;
 use PKP\invitation\core\Invitation;
-use PKP\invitation\invitations\UserRoleAssignmentInvite;
+use PKP\invitation\invitations\userRoleAssignment\UserRoleAssignmentInvite;
 
 abstract class InvitationStepTypes
 {

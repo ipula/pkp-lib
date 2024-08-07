@@ -122,8 +122,9 @@ class InvitationHandler extends Handler
             'orcidValidation' => false,
             'userGroupsToAdd' => [
                 [
-                    'userGroup' => null,
+                    'userGroupId' => null,
                     'dateStart' => null,
+                    'dateEnd' => null,
                     'masthead' => null,
                 ]
             ],
