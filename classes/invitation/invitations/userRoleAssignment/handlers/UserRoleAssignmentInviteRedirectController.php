@@ -12,13 +12,13 @@
  * @brief Change Profile Email invitation
  */
 
-namespace PKP\invitation\invitations\handlers;
+namespace PKP\invitation\invitations\userRoleAssignment\handlers;
 
 use APP\core\Request;
 use APP\template\TemplateManager;
 use PKP\invitation\core\enums\InvitationAction;
 use PKP\invitation\core\InvitationActionRedirectController;
-use PKP\invitation\invitations\UserRoleAssignmentInvite;
+use PKP\invitation\invitations\userRoleAssignment\UserRoleAssignmentInvite;
 use PKP\invitation\stepTypes\AcceptInvitationStep;
 
 class UserRoleAssignmentInviteRedirectController extends InvitationActionRedirectController

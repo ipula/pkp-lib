@@ -12,7 +12,7 @@
  * @brief Assign Roles to User invitation
  */
 
-namespace PKP\invitation\invitations;
+namespace PKP\invitation\invitations\userRoleAssignment;
 
 use APP\core\Application;
 use APP\facades\Repo;
@@ -28,9 +28,10 @@ use PKP\invitation\core\InvitationActionRedirectController;
 use PKP\invitation\core\ReceiveInvitationController;
 use PKP\invitation\core\traits\HasMailable;
 use PKP\invitation\core\traits\ShouldValidate;
-use PKP\invitation\invitations\handlers\api\UserRoleAssignmentCreateController;
-use PKP\invitation\invitations\handlers\api\UserRoleAssignmentReceiveController;
-use PKP\invitation\invitations\handlers\UserRoleAssignmentInviteRedirectController;
+use PKP\invitation\invitations\userRoleAssignment\handlers\api\UserRoleAssignmentCreateController;
+use PKP\invitation\invitations\userRoleAssignment\handlers\api\UserRoleAssignmentReceiveController;
+use PKP\invitation\invitations\userRoleAssignment\handlers\UserRoleAssignmentInviteRedirectController;
+use PKP\invitation\invitations\userRoleAssignment\payload\UserGroupPayload;
 use PKP\invitation\models\InvitationModel;
 use PKP\mail\mailables\UserRoleAssignmentInvitationNotify;
 use PKP\security\Validation;
@@ -50,8 +51,8 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
     ];
 
     protected array $propertyType = [
-        'userGroupsToAdd' => UserUserGroup::class,
-        'userGroupsToRemove' => UserUserGroup::class,
+        'userGroupsToAdd' => UserGroupPayload::class,
+        'userGroupsToRemove' => UserGroupPayload::class,
     ];
 
     protected array $notAccessibleBeforeInvite = [
@@ -84,6 +85,17 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
     public static function getType(): string
     {
         return self::INVITATION_TYPE;
+    }
+
+    public function __construct(?InvitationModel $invitationModel = null)
+    {
+        parent::__construct($invitationModel);
+
+        if (isset($this->userGroupsToAdd)) {
+            array_map(function ($userGroup) {
+                $userGroup->getUserGroupName();
+            }, $this->userGroupsToAdd);
+        }
     }
 
     public function getNotAccessibleAfterInvite(): array
@@ -240,12 +252,7 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
             $userGroupArray = [];
             foreach ($userUserGroupsToAdd as $userGroupData) {
                 if ($userGroupData['userGroup']) {
-                    $newUserUserGroup = new UserUserGroup([
-                        'userGroupId' => $userGroupData['userGroup'],
-                        'dateStart' => $userGroupData['dateStart'],
-                        'dateEnd' => $userGroupData['dateEnd'],
-                        'masthead' => $userGroupData['masthead']
-                    ]);
+                    $newUserUserGroup = UserGroupPayload::fromArray($userGroupData);
 
                     $this->addUserGroup($userGroupArray, $newUserUserGroup);
                 }
@@ -253,7 +260,7 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
         }
     }
 
-    private function addUserGroup(array &$userGroupArray, UserUserGroup $userUserGroup)
+    private function addUserGroup(array &$userGroupArray, UserGroupPayload $userUserGroup)
     {
         $userGroupArray[] = $userUserGroup;
     }

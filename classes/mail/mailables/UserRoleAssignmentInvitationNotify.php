@@ -19,7 +19,7 @@ use PKP\context\Context;
 use PKP\core\Core;
 use PKP\facades\Locale;
 use PKP\invitation\core\enums\InvitationAction;
-use PKP\invitation\invitations\UserRoleAssignmentInvite;
+use PKP\invitation\invitations\userRoleAssignment\UserRoleAssignmentInvite;
 use PKP\mail\Mailable;
 use PKP\mail\traits\Configurable;
 use PKP\mail\traits\Recipient;

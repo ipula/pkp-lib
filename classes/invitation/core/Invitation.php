@@ -74,7 +74,7 @@ abstract class Invitation
             $emailUsed = $email;
         }
 
-        $query = InvitationModel::byStatus(InvitationStatus::INITIALIZED)
+        InvitationModel::byStatus(InvitationStatus::INITIALIZED)
             ->when($userIdUsed !== null, function ($query) use ($userIdUsed) {
                 return $query->byUserId($userIdUsed);
             })
@@ -106,7 +106,7 @@ abstract class Invitation
                     if (property_exists($this, 'propertyType') && !empty($this->propertyType) && array_key_exists($key, $this->propertyType)) {
                         if (is_array($value)) {
                             $this->{$key} = array_map(function ($item) use ($key) {
-                                return new $this->propertyType[$key]($item);
+                                return $this->propertyType[$key]::fromArray($item);
                             }, $value);
                         } else {
                             $this->{$key} = new $this->propertyType[$key]($value);
