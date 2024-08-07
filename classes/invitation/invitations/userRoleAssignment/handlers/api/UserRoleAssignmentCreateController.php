@@ -12,7 +12,7 @@
  * @brief
  */
 
-namespace PKP\invitation\invitations\handlers\api;
+namespace PKP\invitation\invitations\userRoleAssignment\handlers\api;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,7 +20,7 @@ use Illuminate\Http\Response;
 use PKP\core\PKPBaseController;
 use PKP\core\PKPRequest;
 use PKP\invitation\core\CreateInvitationController;
-use PKP\invitation\invitations\UserRoleAssignmentInvite;
+use PKP\invitation\invitations\userRoleAssignment\UserRoleAssignmentInvite;
 use PKP\security\authorization\ContextAccessPolicy;
 use PKP\security\authorization\UserRolesRequiredPolicy;
 use PKP\userGroup\relationships\UserUserGroup;

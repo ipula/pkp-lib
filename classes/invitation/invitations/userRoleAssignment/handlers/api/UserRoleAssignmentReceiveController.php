@@ -12,7 +12,7 @@
  * @brief
  */
 
-namespace PKP\invitation\invitations\handlers\api;
+namespace PKP\invitation\invitations\userRoleAssignment\handlers\api;
 
 use APP\core\Application;
 use APP\facades\Repo;
@@ -21,7 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use PKP\core\PKPBaseController;
 use PKP\invitation\core\ReceiveInvitationController;
-use PKP\invitation\invitations\UserRoleAssignmentInvite;
+use PKP\invitation\invitations\userRoleAssignment\UserRoleAssignmentInvite;
 use PKPRequest;
 
 class UserRoleAssignmentReceiveController extends ReceiveInvitationController
@@ -63,25 +63,6 @@ class UserRoleAssignmentReceiveController extends ReceiveInvitationController
      */
     public function receive(Request $illuminateRequest): JsonResponse 
     {
-        $contextDao = Application::getContextDAO();
-        $context = $contextDao->getById($this->invitation->invitationModel->contextId);
-
-        foreach ($this->invitation->userGroupsToAdd as &$userGroupsToAddData) {
-            $userGroup = Repo::userGroup()->get($userGroupsToAddData['userGroup']);
-
-            if ($userGroup) {
-                $userGroupsToAddData['userGroupName'] = $userGroup->getName($context->getPrimaryLocale());
-            }
-        }
-
-        foreach ($this->invitation->userGroupsToRemove as &$userGroupsToRemoveData) {
-            $userGroup = Repo::userGroup()->get($userGroupsToRemoveData['userGroup']);
-
-            if ($userGroup) {
-                $userGroupsToRemoveData['userGroupName'] = $userGroup->getName($context->getPrimaryLocale());
-            }
-        }
-
         return response()->json(
             $this->invitation, 
             Response::HTTP_OK
