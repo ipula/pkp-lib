@@ -179,6 +179,12 @@ abstract class Invitation
                 $propName = $property->getName();
 
                 if ($propName !== 'invitationModel' && property_exists($this, $propName)) {
+                    // if the initial payload does not have the specific property name, and no value is set 
+                    // currently for that property name, don't add the property to the payload
+                    if ((!isset($this->invitationModel->payload) || !array_key_exists($propName, $this->invitationModel->payload)) && !isset($this->{$propName})) {
+                        continue;
+                    }
+
                     $payload[$propName] = $this->{$propName};
                 }
             }

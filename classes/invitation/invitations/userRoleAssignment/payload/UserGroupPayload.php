@@ -25,8 +25,8 @@ class UserGroupPayload
 
     public function __construct(
         public int $userGroupId,
-        public bool $masthead,
-        public string $dateStart,
+        public ?bool $masthead,
+        public ?string $dateStart,
         public ?string $dateEnd = null) {
     }
 
