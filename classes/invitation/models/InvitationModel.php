@@ -177,7 +177,7 @@ class InvitationModel extends Model
         return $query->when($contextId !== null, function ($query) use ($contextId) {
             return $query->where('context_id', $contextId);
         }, function ($query) {
-            return $query->whereNull('contextId');
+            return $query->whereNull('context_id');
         });
     }
 
@@ -235,5 +235,21 @@ class InvitationModel extends Model
             'status' => $status->value,
             'updated_at' => Carbon::now()
         ]);
+    }
+
+    // Custom toArray method to ensure serialization of attributes
+    public function toArray()
+    {
+        return [
+            'id' => $this->id,
+            'status' => $this->status,
+            'createdAt' => $this->createdAt,
+            'updatedAt' => $this->updatedAt,
+            'userId' => $this->userId,
+            'contextId' => $this->contextId,
+            'expiryDate' => $this->expiryDate,
+            'email' => $this->email,
+            'inviterId' => $this->inviterId,
+        ];
     }
 }

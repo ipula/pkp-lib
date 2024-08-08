@@ -9,7 +9,7 @@
  *
  * @class UserRoleAssignmentReceiveController
  *
- * @brief
+ * @brief The controller that defines the "Receive" stage functions of the invitation
  */
 
 namespace PKP\invitation\invitations\userRoleAssignment\handlers\api;
@@ -42,8 +42,12 @@ class UserRoleAssignmentReceiveController extends ReceiveInvitationController
     public function decline(Request $illuminateRequest): JsonResponse
     {
         $this->invitation->decline();
+        $this->invitation->fillCustomProperties();
 
-        return response()->json(Response::HTTP_OK);
+        return response()->json(
+            $this->invitation,
+            Response::HTTP_OK
+        );
     }
 
     /**
@@ -52,8 +56,12 @@ class UserRoleAssignmentReceiveController extends ReceiveInvitationController
     public function finalize(Request $illuminateRequest): JsonResponse
     {
         $this->invitation->finalize();
+        $this->invitation->fillCustomProperties();
 
-        return response()->json(Response::HTTP_OK);
+        return response()->json(
+            $this->invitation,
+            Response::HTTP_OK
+        );
     }
 
     /**
@@ -61,6 +69,8 @@ class UserRoleAssignmentReceiveController extends ReceiveInvitationController
      */
     public function receive(Request $illuminateRequest): JsonResponse
     {
+        $this->invitation->fillCustomProperties();
+
         return response()->json(
             $this->invitation,
             Response::HTTP_OK

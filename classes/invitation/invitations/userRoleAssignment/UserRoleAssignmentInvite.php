@@ -36,7 +36,6 @@ use PKP\invitation\models\InvitationModel;
 use PKP\mail\mailables\UserRoleAssignmentInvitationNotify;
 use PKP\security\Validation;
 use PKP\userGroup\relationships\enums\UserUserGroupMastheadStatus;
-use PKP\userGroup\relationships\UserUserGroup;
 
 class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
 {
@@ -50,13 +49,8 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
         'userGroupsToRemove',
     ];
 
-    protected array $propertyType = [
-        'userGroupsToAdd' => UserGroupPayload::class,
-        'userGroupsToRemove' => UserGroupPayload::class,
-    ];
-
     protected array $notAccessibleBeforeInvite = [
-        // 'orcid',
+        'orcid',
     ];
 
     public ?string $orcid = null;
@@ -72,31 +66,15 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
     public ?string $emailBody = null;
     public ?bool $existingUser = null;
 
-    /**
-     * @var UserUserGroup[]
-     */
-    public array $userGroupsToAdd = [];
+    public ?array $userGroupsToAdd = null;
 
-    /**
-     * @var UserUserGroup[]
-     */
-    public array $userGroupsToRemove = [];
+    public ?array $userGroupsToRemove = null;
 
     public static function getType(): string
     {
         return self::INVITATION_TYPE;
     }
 
-    public function __construct(?InvitationModel $invitationModel = null)
-    {
-        parent::__construct($invitationModel);
-
-        if (isset($this->userGroupsToAdd)) {
-            array_map(function ($userGroup) {
-                $userGroup->getUserGroupName();
-            }, $this->userGroupsToAdd);
-        }
-    }
 
     public function getNotAccessibleAfterInvite(): array
     {
@@ -152,7 +130,7 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
     {
         // Check if everything is in order regarding the properties
         if (empty($this->userGroupsToAdd) && empty($this->userGroupsToRemove)) {
-            throw new Exception('The invitation can not be dispatched because you have not defined any user group changes');
+            throw new Exception(__('invitation.userRoleAssignment.validation.error.noUserGroupChanges'));
         }
 
         // Invalidate any other related invitation
@@ -204,19 +182,22 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
         }
 
         foreach ($this->userGroupsToRemove as $userUserGroup) {
+            $userGroupPayload = UserGroupPayload::fromArray($userUserGroup);
             Repo::userGroup()-> deleteAssignmentsByUserId(
                 $user->getId(),
-                $userUserGroup->userGroupId
+                $userGroupPayload->userGroupId
             );
         }
 
         foreach ($this->userGroupsToAdd as $userUserGroup) {
+            $userGroupPayload = UserGroupPayload::fromArray($userUserGroup);
+
             Repo::userGroup()->assignUserToGroup(
                 $user->getId(),
-                $userUserGroup->userGroupId,
-                $userUserGroup->dateStart,
-                $userUserGroup->dateEnd,
-                isset($userUserGroup->masthead) && $userUserGroup->masthead
+                $userGroupPayload->userGroupId,
+                $userGroupPayload->dateStart,
+                $userGroupPayload->dateEnd,
+                isset($userGroupPayload->masthead) && $userGroupPayload->masthead
                     ? UserUserGroupMastheadStatus::STATUS_ON
                     : UserUserGroupMastheadStatus::STATUS_OFF
             );
@@ -246,25 +227,6 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
         return new UserRoleAssignmentReceiveController($invitation);
     }
 
-    public function updateUserGroupArray(array &$userGroupArray, array $userUserGroupsToAdd): void
-    {
-        if (is_array($userUserGroupsToAdd) && !empty($userUserGroupsToAdd)) {
-            $userGroupArray = [];
-            foreach ($userUserGroupsToAdd as $userGroupData) {
-                if ($userGroupData['userGroup']) {
-                    $newUserUserGroup = UserGroupPayload::fromArray($userGroupData);
-
-                    $this->addUserGroup($userGroupArray, $newUserUserGroup);
-                }
-            }
-        }
-    }
-
-    private function addUserGroup(array &$userGroupArray, UserGroupPayload $userUserGroup)
-    {
-        $userGroupArray[] = $userUserGroup;
-    }
-
     /**
      * @inheritDoc
      */
@@ -273,10 +235,45 @@ class UserRoleAssignmentInvite extends Invitation implements IApiHandleable
         // Custom rules
         if (isset($this->userGroupsToAdd)) {
             if (empty($this->userGroupsToAdd)) {
-                $this->addError('userGroupsToAdd', 'User groups must be defined');
+                $this->addError('userGroupsToAdd', __('invitation.userRoleAssignment.validation.error.addUserRoles.notExisting'));
             }
         }
 
+        if (isset($this->userGroupsToRemove)) {
+            //            if (empty($this->userGroupsToRemove)) {
+            //                $this->addError('userGroupsToRemove', __('invitation.userRoleAssignment.validation.error.removeUserRoles.notExisting'));
+            //            }
+        }
+
         return $this->isValid();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function fillCustomProperties(): void
+    {
+        $this->fillInvitationWithUserGroups();
+    }
+
+    public function fillInvitationWithUserGroups(): void
+    {
+        if (isset($this->userGroupsToAdd)) {
+            $this->fillArrayWithUserGroups($this->userGroupsToAdd);
+        }
+
+        if (isset($this->userGroupsToRemove)) {
+            $this->fillArrayWithUserGroups($this->userGroupsToRemove);
+        }
+    }
+
+    private function fillArrayWithUserGroups(array &$userGroups): void
+    {
+        $userGroups = array_map(function ($userGroup) {
+            $userGroupPayload = UserGroupPayload::fromArray($userGroup);
+            $userGroupPayload->getUserGroupName();
+            $userGroup['userGroupPayload'] = $userGroupPayload;
+            return $userGroup;
+        }, $userGroups);
     }
 }

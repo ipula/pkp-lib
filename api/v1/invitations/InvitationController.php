@@ -285,7 +285,9 @@ class InvitationController extends PKPBaseController
             ->get();
 
         $finalCollection = $invitations->map(function ($invitation) {
-            return Repo::invitation()->getById($invitation->id);
+            $specificInvitation = Repo::invitation()->getById($invitation->id);
+            $specificInvitation->fillCustomProperties();
+            return $specificInvitation;
         });
 
         return response()->json([
