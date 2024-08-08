@@ -75,16 +75,6 @@ class UserRoleAssignmentCreateController extends CreateInvitationController
 
         $this->invitation->fillFromArgs($payload);
 
-        $userGroupsToAdd = $payload['userGroupsToAdd'];
-        if (isset($userGroupsToAdd)) {
-            $this->invitation->updateUserGroupArray($this->invitation->userGroupsToAdd, $userGroupsToAdd);
-        }
-
-        $userGroupsToRemove = $payload['userGroupsToRemove'];
-        if (isset($userGroupsToRemove)) {
-            $this->invitation->updateUserGroupArray($this->invitation->userGroupsToRemove, $userGroupsToRemove);
-        }
-
         $this->invitation->updatePayload();
 
         if (!$this->invitation->isValid()) {
@@ -121,8 +111,22 @@ class UserRoleAssignmentCreateController extends CreateInvitationController
      */
     public function invite(Request $illuminateRequest): JsonResponse 
     {
-        $this->invitation->invite();
+        if (!$this->invitation->invite()) {
+            $response = [
+                'invitation' => $this->invitation,
+                'validationError' => !$this->invitation->isValid(),
+                'errors' => $this->invitation->getErrors(),
+            ];
 
-        return response()->json($this->invitation, Response::HTTP_OK);
+            return response()->json(
+                $response, 
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        return response()->json(
+            $this->invitation, 
+            Response::HTTP_OK
+        );
     }
 }

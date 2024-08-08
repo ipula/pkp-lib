@@ -19,6 +19,7 @@ use PKP\context\Context;
 use PKP\core\Core;
 use PKP\facades\Locale;
 use PKP\invitation\core\enums\InvitationAction;
+use PKP\invitation\invitations\userRoleAssignment\payload\UserGroupPayload;
 use PKP\invitation\invitations\userRoleAssignment\UserRoleAssignmentInvite;
 use PKP\mail\Mailable;
 use PKP\mail\traits\Configurable;
@@ -93,15 +94,16 @@ class UserRoleAssignmentInvitationNotify extends Mailable
 
         $count = 1;
         foreach ($userUserGroups as $userUserGroup) {
+            $userGroupPayload = UserGroupPayload::fromArray($userUserGroup);
             if ($count == 1) {
                 $retString = $title;
             }
 
             if (!isset($userGroup)) {
-                $userGroup = Repo::userGroup()->get($userUserGroup->userGroupId);
+                $userGroup = Repo::userGroup()->get($userGroupPayload->userGroupId);
             }
 
-            $userGroupSection = $this->getUserUserGroupSection($userUserGroup, $userGroup, $context, $count, $locale);
+            $userGroupSection = $this->getUserUserGroupSection($userGroupPayload, $userGroup, $context, $count, $locale);
 
             $retString .= $userGroupSection;
 
@@ -111,7 +113,7 @@ class UserRoleAssignmentInvitationNotify extends Mailable
         return $retString;
     }
 
-    private function getUserUserGroupSection($userUserGroup, $userGroup, $context,  $count, $locale): string 
+    private function getUserUserGroupSection(UserGroupPayload $userUserGroup, UserGroup $userGroup, Context $context, int  $count, string $locale): string 
     {
         $sectionEndingDate = '';
         if (isset($userGroupData['dateEnd'])) {

@@ -20,6 +20,7 @@ use Carbon\Carbon;
 use Exception;
 use Identity;
 use Illuminate\Support\Facades\Mail;
+use PhpCsFixer\Fixer\FunctionNotation\VoidReturnFixer;
 use PKP\config\Config;
 use PKP\context\Context;
 use PKP\invitation\core\enums\InvitationAction;
@@ -96,7 +97,17 @@ abstract class Invitation
         $this->invitationModel->save();
     }
 
+    /**
+     * This is filled with correlation between an invitation property
+     * and the Object that this property corresponds to.
+     */
     protected array $propertyType = [];
+
+    /**
+     * Used to fill the invitation's properties from the model's payload values.
+     * if the $propertyType has values in, then the property is filled by the 
+     * fromArray function of the given Object correlation
+     */
     protected function fillFromPayload()
     {
         if ($this->invitationModel->payload) {
@@ -108,7 +119,7 @@ abstract class Invitation
                                 return $this->propertyType[$key]::fromArray($item);
                             }, $value);
                         } else {
-                            $this->{$key} = new $this->propertyType[$key]($value);
+                            $this->{$key} = $this->propertyType[$key]::fromArray($item);
                         }
                     } else {
                         $this->{$key} = $value;
@@ -118,6 +129,10 @@ abstract class Invitation
         }
     }
 
+    /**
+     * Use that when you have an array of values that the invitation needs to fill its 
+     * properties with.
+     */
     public function fillFromArgs(array $args): void
     {
         foreach ($args as $propName => $value) {
@@ -134,13 +149,14 @@ abstract class Invitation
             }
 
             if ($propName !== 'invitationModel' && property_exists($this, $propName)) {
-                if (!is_array($this->{$propName})) {
-                    $this->{$propName} = $value;
-                }
+                $this->{$propName} = $value;
             }
         }
     }
 
+    /**
+     * Saves the payload to the database, after it passes a sanity check 
+     */
     public function updatePayload(): ?bool
     {
         $payload = $this->invitationModel->payload ?: [];
@@ -206,7 +222,7 @@ abstract class Invitation
 
     public function setExpiryDate(Carbon $expiryDate)
     {
-        if ($this->getStatus() !== InvitationStatus::INITIALIZED) {+
+        if ($this->getStatus() !== InvitationStatus::INITIALIZED) {
             throw new Exception('Can not change expiry date at this stage');
         }
 
@@ -221,6 +237,12 @@ abstract class Invitation
 
         // Need to return error messages also?
         $this->preInviteActions();
+
+        if (in_array(ShouldValidate::class, class_uses($this))) {
+            if (!$this->isValid()) {
+                return false;
+            }
+        }
 
         $this->checkForKey();
 
@@ -380,18 +402,14 @@ abstract class Invitation
         return (int) Config::getVar('invitations', 'expiration_days', self::DEFAULT_EXPIRY_DAYS);
     }
 
-    public function getUserId(): ?int
+    /**
+     * this function is overriden by custom invitations if necessary
+     * so that properties of the invitation are filled before returning 
+     * the invitation object to the code.
+     * Used in InvitationFactory::getExisting.
+     */
+    public function fillCustomProperties(): void
     {
-        return $this->invitationModel->userId;
-    }
-
-    public function getContextId(): ?int
-    {
-        return $this->invitationModel->contextId;
-    }
-
-    public function getEmail(): ?int
-    {
-        return $this->invitationModel->email;
+        return;
     }
 }
