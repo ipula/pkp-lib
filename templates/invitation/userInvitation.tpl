@@ -19,6 +19,7 @@
             :page-title-description="pageTitleDescription"
             :invitation-payload="invitationPayload"
             :invitation-type="invitationType"
+            :invitation-mode="invitationMode"
             :steps="steps"
     />
 {/block}

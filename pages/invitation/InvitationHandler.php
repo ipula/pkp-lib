@@ -110,7 +110,7 @@ class InvitationHandler extends Handler
 
     public function invite($args, $request): void
     {
-        $invitationId = null;
+        $invitationMode = 'create';
         $invitationPayload = [
             'userId' => null,
             'email' => '',
@@ -138,16 +138,16 @@ class InvitationHandler extends Handler
         $invitation = null;
         if(!empty($args)) {
             $invitation = $this->getInvitationById($request, $args[0]);
-            $invitationId = $invitation->invitationModel->invitation_id;
+            $invitationMode = 'edit';
             $invitationPayload['userId'] = $invitation->invitationModel->userId;
             $invitationPayload['email'] = $invitation->invitationModel->email;
-            $invitationPayload['orcid'] = $invitation->orcid;
+            $invitationPayload['orcid'] = $invitation->orcid; //$reviewer->getData('orcidAccessToken')
             $invitationPayload['givenName'] = $invitation->givenName;
             $invitationPayload['familyName'] = $invitation->familyName;
             $invitationPayload['affiliation'] = $invitation->affiliation;
             $invitationPayload['country'] = $invitation->country;
             $invitationPayload['userGroupsToAdd'] = $invitation->userGroupsToAdd;
-            $invitationPayload['currentUserGroups'] = !$invitation->currentUserGroups ? [] : $invitation->currentUserGroups;
+            $invitationPayload['currentUserGroups'] = !$invitation->invitationModel->userId ? [] : $this->getUserUserGroups($invitation->invitationModel->userId);
             $invitationPayload['userGroupsToRemove'] = $invitation->userGroupsToRemove;
             $invitationPayload['emailComposer'] = $invitation->emailComposer;
         }
@@ -185,8 +185,8 @@ class InvitationHandler extends Handler
                 ),
             'primaryLocale' => $context->getData('primaryLocale'),
             'invitationType' => 'userRoleAssignment',
-            'invitationId' => $invitationId,
             'invitationPayload' => $invitationPayload,
+            'invitationMode' => $invitationMode,
             'pageTitle' => __('invitation.wizard.pageTitle'),
             'pageTitleDescription' => __('invitation.wizard.pageTitleDescription'),
         ]);
@@ -196,5 +196,24 @@ class InvitationHandler extends Handler
             'pageWidth' => TemplateManager::PAGE_WIDTH_FULL,
         ]);
         $templateMgr->display('/invitation/userInvitation.tpl');
+    }
+
+    private function getUserUserGroups($id): array
+    {
+        $output = [];
+        $userGroups = Repo::userGroup()->userUserGroups($id);
+        foreach ($userGroups as $userGroup) {
+            $output[] = [
+                'id' => (int) $userGroup->getId(),
+                'name' => $userGroup->getName(null),
+                'abbrev' => $userGroup->getAbbrev(null),
+                'roleId' => (int) $userGroup->getRoleId(),
+                'showTitle' => (bool) $userGroup->getShowTitle(),
+                'permitSelfRegistration' => (bool) $userGroup->getPermitSelfRegistration(),
+                'permitMetadataEdit' => (bool) $userGroup->getPermitMetadataEdit(),
+                'recommendOnly' => (bool) $userGroup->getRecommendOnly(),
+            ];
+        }
+        return $output;
     }
 }
