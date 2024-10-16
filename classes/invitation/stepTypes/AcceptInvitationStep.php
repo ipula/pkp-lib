@@ -95,7 +95,8 @@ class AcceptInvitationStep extends InvitationStepTypes
             [
                 'validateFields' => [
                     'username',
-                    'password'
+                    'password',
+                    'privacyStatement'
                 ]
             ]
         );

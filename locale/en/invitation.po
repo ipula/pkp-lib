@@ -399,3 +399,9 @@ msgstr "If you edit the existing invitation or add a new role, the current invit
 
 msgid "validation.after_or_equal"
 msgstr "Start date should be greater than or equal to today"
+
+msgid "invitation.removeRoles"
+msgstr "User Removed From Role"
+
+msgid "acceptInvitation.privacyStatement.validation"
+msgstr "Please confirm that you have read and agree privacy statement"
