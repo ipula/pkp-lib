@@ -14,6 +14,7 @@
 namespace PKP\invitation\invitations\userRoleAssignment\handlers;
 
 use APP\core\Request;
+use APP\facades\Repo;
 use APP\template\TemplateManager;
 use PKP\core\PKPApplication;
 use PKP\invitation\core\enums\InvitationAction;
@@ -35,8 +36,9 @@ class UserRoleAssignmentInviteRedirectController extends InvitationActionRedirec
         $templateMgr->assign('invitation', $this->invitation);
         $context = $request->getContext();
         $steps = new AcceptInvitationStep();
+        $user = $this->invitation->invitationModel->userId ?Repo::user()->get($this->invitation->invitationModel->userId) : null;
         $templateMgr->setState([
-            'steps' => $steps->getSteps($this->invitation, $context),
+            'steps' => $steps->getSteps($this->invitation, $context,$user),
             'primaryLocale' => $context->getData('primaryLocale'),
             'pageTitle' => __('invitation.wizard.pageTitle'),
             'invitationId' => (int)$request->getUserVar('id') ?: null,
