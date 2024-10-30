@@ -115,9 +115,6 @@ msgstr "Invite to a role"
 msgid "invitation.wizard.pageTitle"
 msgstr "Invite user to take a role"
 
-msgid "invitation.wizard.pageTitleDescription"
-msgstr "You are inviting a user to take a role in OJS along with appearing in the journal masthead"
-
 msgid "userInvitation.enterDetailsLabel"
 msgstr "Enter details"
 
@@ -150,9 +147,6 @@ msgstr "Enter details"
 
 msgid "userInvitation.enterDetails.stepLabel"
 msgstr "{$step} - Enter details and invite for roles"
-
-msgid "userInvitation.enterDetails.stepDescription"
-msgstr "You can invite them to take up a role in OJS"
 
 msgid "userInvitation.enterDetails.nextButtonLabel"
 msgstr "Save And Continue"
@@ -199,9 +193,6 @@ msgstr "{$step} - Modify email shared with the user"
 msgid "userInvitation.modal.title"
 msgstr "Invitation Sent"
 
-msgid "userInvitation.modal.message"
-msgstr "{$email} has been invited to new role in OJS.You can be updated about users on the User and Roles page, your ojs notification and/ or your email"
-
 msgid "userInvitation.modal.button"
 msgstr "View All Users"
 
@@ -226,20 +217,8 @@ msgstr "Verify ORCID iD"
 msgid "acceptInvitation.verifyOrcid.stepLabel"
 msgstr "{$step} - Verify ORCID iD"
 
-msgid "acceptInvitation.verifyOrcid.stepDescription"
-msgstr "You can choose to verify your ORCID iD ok skip it. If you chose to skip it now, You can verify your ORCID iD from your profile section in OJS later"
-
 msgid "acceptInvitation.verifyOrcid.nextButtonLabel"
 msgstr "Save and continue"
-
-msgid "acceptInvitation.accountDetails.stepName"
-msgstr "Create OJS account"
-
-msgid "acceptInvitation.accountDetails.stepLabel"
-msgstr "{$step} - Create OJS account"
-
-msgid "acceptInvitation.accountDetails.stepDescription"
-msgstr "To get started with OJS and accept the new role, you will need to create an account with us. For this purpose please enter a username and password."
 
 msgid "acceptInvitation.accountDetails.nextButtonLabel"
 msgstr "Save and continue"
@@ -267,12 +246,6 @@ msgstr "Review & create account"
 
 msgid "acceptInvitation.detailsReview.stepLabel"
 msgstr "{$step} - Review & create account"
-
-msgid "acceptInvitation.detailsReview.stepDescription"
-msgstr "Review details to start your new roles in OJS"
-
-msgid "acceptInvitation.detailsReview.nextButtonLabel"
-msgstr "Accept And Continue to OJS"
 
 msgid "acceptInvitation.skipVerifyOrcid"
 msgstr "Skip ORCID verification"
@@ -312,15 +285,6 @@ msgstr "Account Details"
 
 msgid "acceptInvitation.review.userDetails"
 msgstr "User Details"
-
-msgid "invitation.orcid.acceptInvitation.message"
-msgstr "Not verified. You can verify your ORCID iD from your profile section in OJS"
-
-msgid "acceptInvitation.modal.title"
-msgstr "You've been assigned a new role in OJS"
-
-msgid "acceptInvitation.modal.message"
-msgstr "Congratulations on your new role in OJS! You might now have access to new options. If you need assistance navigating the system, please click on the “Help” buttons throughout the interface for guidance"
 
 msgid "acceptInvitation.modal.button"
 msgstr "View All Submissions"
