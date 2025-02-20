@@ -250,9 +250,14 @@ class InvitationHandler extends Handler
             $invitationPayload['givenName'] = $user->getGivenName(null);
             $invitationPayload['familyName'] = $user->getFamilyName(null);
             $invitationPayload['affiliation'] = $user->getAffiliation(null);
-            $invitationPayload['country'] = $user->getCountry();
+            $invitationPayload['country'] = $user->getCountryLocalized();
             $invitationPayload['biography'] = $user->getBiography(null);
             $invitationPayload['phone'] = $user->getPhone();
+            $invitationPayload['mailingAddress'] = $user->getMailingAddress();
+            $invitationPayload['signature'] = $user->getSignature(null);
+            $invitationPayload['locals'] = $user->getLocales();
+            $invitationPayload['reviewInterests'] = $user->getInterestString();
+            $invitationPayload['homePageUrl'] = $user->getUrl();
             $invitationPayload['disabled'] = $user->getData('disabled');
             $invitationPayload['userGroupsToAdd'] = [];
             $invitationPayload['currentUserGroups'] = $this->getUserUserGroups($args[0],$request->getContext());
