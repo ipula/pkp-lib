@@ -22,13 +22,10 @@ use APP\facades\Repo;
 use APP\handler\Handler;
 use APP\template\TemplateManager;
 use PKP\context\Context;
-use PKP\core\PKPApplication;
 use PKP\facades\Locale;
-use PKP\i18n\LocaleMetadata;
 use PKP\invitation\core\enums\InvitationAction;
 use PKP\invitation\core\Invitation;
 use PKP\invitation\stepTypes\SendInvitationStep;
-use PKP\user\User;
 use PKP\userGroup\relationships\UserUserGroup;
 
 class InvitationHandler extends Handler
@@ -155,8 +152,8 @@ class InvitationHandler extends Handler
             $invitationModel = $invitation->invitationModel->toArray();
 
             $invitationMode = 'edit';
-            $payload['email']=$invitationModel['email'];
-            $invitationData = $this->generateInvitationPayload($invitationModel['userId'],$payload,$request->getContext())['invitationPayload'];
+            $payload['email'] = $invitationModel['email'];
+            $invitationData = $this->generateInvitationPayload($invitationModel['userId'], $payload, $request->getContext());
             $user = $invitationData['user'];
             $invitationPayload = $invitationData['invitationPayload'];
         }
@@ -206,7 +203,8 @@ class InvitationHandler extends Handler
             'pageTitleDescription' => $invitation ?
                 __(
                     'invitation.wizard.viewPageTitleDescription',
-                    ['name' => $invitationPayload['givenName'][Locale::getLocale()]]
+                    ['name' => $invitationPayload['givenName'][Locale::getLocale()] ?
+                        $invitationPayload['givenName'][Locale::getLocale()] : $invitationPayload['inviteeEmail']]
                 )
                 : __('invitation.wizard.pageTitleDescription'),
         ]);
@@ -228,9 +226,9 @@ class InvitationHandler extends Handler
     public function editUser($args, $request): void
     {
         $invitation = null;
-        if(!empty($args)) {
+        if (!empty($args)) {
             $invitationMode = 'editUser';
-            $invitationData = $this->generateInvitationPayload($args[0],[],$request->getContext());
+            $invitationData = $this->generateInvitationPayload($args[0], [], $request->getContext());
             $user = $invitationData['user'];
             $invitationPayload = $invitationData['invitationPayload'];
             $templateMgr = TemplateManager::getManager($request);
@@ -257,7 +255,7 @@ class InvitationHandler extends Handler
             ];
             $steps = new SendInvitationStep();
             $templateMgr->setState([
-                'steps' => $steps->getSteps($invitation, $context,$user),
+                'steps' => $steps->getSteps($invitation, $context, $user),
                 'emailTemplatesApiUrl' => $request
                     ->getDispatcher()
                     ->url(
@@ -295,7 +293,7 @@ class InvitationHandler extends Handler
      * @param Context $context
      * @param int $id
      */
-    private function getUserUserGroups(int $id , Context $context): array
+    private function getUserUserGroups(int $id, Context $context): array
     {
         $userGroups = [];
         $userUserGroups = UserUserGroup::query()
@@ -325,11 +323,11 @@ class InvitationHandler extends Handler
     private function generateInvitationPayload($userId, array $payload, Context $context): array
     {
         $user = null;
-        if($userId){
-            $user = Repo::user()->get($userId,true);
+        if ($userId) {
+            $user = Repo::user()->get($userId, true);
         }
 
-        $invitationPayload =[];
+        $invitationPayload = [];
         $invitationPayload['userId'] = $user ? $user->getId() : $userId;
         $invitationPayload['inviteeEmail'] = $user ? $user->getEmail() : $payload['email'];
         $invitationPayload['orcid'] = $user ? $user->getData('orcid') : $payload['orcid'];
@@ -341,12 +339,12 @@ class InvitationHandler extends Handler
         $invitationPayload['phone'] = $user?->getPhone();
         $invitationPayload['mailingAddress'] = $user?->getMailingAddress();
         $invitationPayload['signature'] = $user?->getSignature(null);
-        $invitationPayload['locales'] = $user? $this->getWorkingLanguages($context,$user->getLocales()) : null;
+        $invitationPayload['locales'] = $user ? $this->getWorkingLanguages($context, $user->getLocales()) : null;
         $invitationPayload['reviewInterests'] = $user?->getInterestString();
         $invitationPayload['homePageUrl'] = $user?->getUrl();
         $invitationPayload['disabled'] = $user?->getData('disabled');
         $invitationPayload['userGroupsToAdd'] = !$payload['userGroupsToAdd'] ? [] : $payload['userGroupsToAdd'];
-        $invitationPayload['currentUserGroups'] = !$userId ? [] : $this->getUserUserGroups($userId,$context);
+        $invitationPayload['currentUserGroups'] = !$userId ? [] : $this->getUserUserGroups($userId, $context);
         $invitationPayload['userGroupsToRemove'] = [];
         $invitationPayload['emailComposer'] = [
             'emailBody' => '',
@@ -364,7 +362,7 @@ class InvitationHandler extends Handler
      * @param $userLocales
      * @return string
      */
-    private function getWorkingLanguages(Context $context,$userLocales): string
+    private function getWorkingLanguages(Context $context, $userLocales): string
     {
         $locales = $context->getSupportedLocaleNames();
         return join(__('common.commaListSeparator'), array_map(fn($key) => $locales[$key], $userLocales));
