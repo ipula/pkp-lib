@@ -19,9 +19,12 @@ use APP\template\TemplateManager;
 use PKP\core\PKPApplication;
 use PKP\invitation\core\enums\InvitationAction;
 use PKP\invitation\core\enums\InvitationStatus;
+use PKP\invitation\core\enums\InvitationTypes;
 use PKP\invitation\core\InvitationActionRedirectController;
+use PKP\invitation\core\InvitationContextFactory;
 use PKP\invitation\invitations\userRoleAssignment\UserRoleAssignmentInvite;
 use PKP\invitation\stepTypes\AcceptInvitationStep;
+use PKP\invitation\stepTypes\SendInvitationStep;
 
 /**
  * @extends InvitationActionRedirectController<UserRoleAssignmentInvite>
@@ -48,9 +51,10 @@ class UserRoleAssignmentInviteRedirectController extends InvitationActionRedirec
         $context = $request->getContext();
         $invitationModel = $this->getInvitation()->invitationModel->toArray();
         $user = $invitationModel['userId'] ? Repo::user()->get($invitationModel['userId']) : null;
-        $steps = new AcceptInvitationStep(
-            $this->getInvitation(), $context, $user,'userRoleAssignment'
-        );
+
+        $invitationContext = InvitationContextFactory::make(InvitationTypes::INVITATION_USER_ROLE_ASSIGNMENT->value);
+        $steps = new AcceptInvitationStep($invitationContext, $this->invitation, $context, $user);
+
         $templateMgr->setState([
             'steps' => $steps->getSteps(),
             'primaryLocale' => $context->getData('primaryLocale'),

@@ -6,14 +6,14 @@ use APP\core\Application;
 use APP\core\Request;
 use APP\facades\Repo;
 use APP\template\TemplateManager;
+use PKP\facades\Locale;
 use PKP\invitation\core\enums\InvitationTypes;
 use PKP\invitation\core\Invitation;
 use PKP\invitation\core\InvitationContextFactory;
 use PKP\invitation\core\InvitationUIActionRedirectController;
+use PKP\invitation\invitations\reviewerAccess\resources\ReviewerAccessInviteResource;
 use PKP\invitation\invitations\userRoleAssignment\resources\UserRoleAssignmentInviteResource;
 use PKP\invitation\stepTypes\SendInvitationStep;
-use PKP\security\Role;
-use PKP\userGroup\UserGroup;
 
 class ReviewerAccessInviteUIController extends InvitationUIActionRedirectController
 {
@@ -30,6 +30,10 @@ class ReviewerAccessInviteUIController extends InvitationUIActionRedirectControl
     public function createHandle(Request $request, $userId = null): void
     {
         if(!$request->getUserVars()['submissionId'] || !$request->getUserVars()['reviewRoundId']) {
+            throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+        }
+        $submission = Repo::submission()->get((int) $request->getUserVars()['submissionId']);
+        if(!$submission){
             throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
         }
 
@@ -61,46 +65,59 @@ class ReviewerAccessInviteUIController extends InvitationUIActionRedirectControl
                 'subject' => '',
             ]
         ];
+        $context = $request->getContext();
         $user = null;
         $invitationMode = 'create';
         if ($userId) {
-            //send invitation using select a user already has reviewer permission user group
-            if (!$this->isUserReviewer($userId)) {
-                throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
-            }
             $user = Repo::user()->get($userId, true);
             if (!$user) {
                 throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
             }
+            //send invitation using select a user already has reviewer permission user group
+            if (!$this->invitation->isInvitationUserReviewer($userId,$context->getId())) {
+                throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+            }
             $invitationPayload = (
-            new UserRoleAssignmentInviteResource($this->invitation))
-                ->transformInvitationPayload($userId, $user->getAllData(), $request->getContext()
+            new ReviewerAccessInviteResource($this->invitation))
+                ->transformInvitationPayload($userId, $user->getAllData(), $request->getContext(),
                 );
             $invitationPayload->userGroupsToAdd = [];
-            $invitationPayload->inviteeEmail = $user->getEmail();
             $invitationPayload->submissionId = $request->getUserVars()['submissionId'];
             $invitationPayload->reviewRoundId = $request->getUserVars()['reviewRoundId'];
         }
         $templateMgr = TemplateManager::getManager($request);
         $breadcrumbs = $templateMgr->getTemplateVars('breadcrumbs');
-        $context = $request->getContext();
         $breadcrumbs[] = [
-            'id' => 'contexts',
-            'name' => __('navigation.access'),
+            'id' => 'submission',
+            'name' => __('navigation.submissions'),
             'url' => $request
                 ->getDispatcher()
                 ->url(
                     $request,
                     Application::ROUTE_PAGE,
                     null,
-                    'management',
-                    'settings',
-                    ['access']
+                    'dashboard',
+                    'editorial',
+                )
+        ];
+        $breadcrumbs[] = [
+            'id' => 'submissionTitle',
+            'name' => $submission->getCurrentPublication()->getLocalizedTitle(),
+            'url' => $request
+                ->getDispatcher()
+                ->url(
+                    $request,
+                    Application::ROUTE_PAGE,
+                    null,
+                    'dashboard',
+                    'editorial',
+                    null,
+                    ['workflowSubmissionId' => $request->getUserVars()['submissionId']]
                 )
         ];
         $breadcrumbs[] = [
             'id' => 'invitationWizard',
-            'name' => __('reviewerInvitation.wizard.pageTitle'),
+            'name' => __('reviewerInvitation.wizard.breadcrumb'),
         ];
         $invitationContext = InvitationContextFactory::make(InvitationTypes::INVITATION_REVIEWER_ACCESS_INVITE->value);
         $steps = new SendInvitationStep($invitationContext, $this->invitation, $context, $user);
@@ -120,13 +137,17 @@ class ReviewerAccessInviteUIController extends InvitationUIActionRedirectControl
             'invitationMode' => $invitationMode,
             'invitationUserData' => $userId ?
                 (
-                new UserRoleAssignmentInviteResource($this->invitation))
+                new ReviewerAccessInviteResource($this->invitation))
                     ->transformInvitationUserData(
                         $user,
                         $request->getContext()
                     ) : [],
-            'pageTitle' =>  __('reviewerInvitation.wizard.pageTitle'),
-            'pageTitleDescription' => __('reviewerInvitation.wizard.pageTitleDescription'),
+            'pageTitle' =>
+                $user ?
+                    __('reviewerInvitation.wizard.pageTitle.existingUser'): __('reviewerInvitation.wizard.pageTitle.newUser')
+            ,
+            'pageTitleDescription' => $user ?
+                __('reviewerInvitation.wizard.pageTitleDescription.existingUser'):__('reviewerInvitation.wizard.pageTitleDescription.newUser'),
         ]);
         $templateMgr->assign([
             'pageComponent' => 'Page',
@@ -138,15 +159,93 @@ class ReviewerAccessInviteUIController extends InvitationUIActionRedirectControl
 
     public function editHandle(Request $request): void
     {
-        // TODO: Implement editHandle() method.
+        $payload = $this->invitation->getPayload()->toArray();
+        $invitationModel = $this->invitation->invitationModel->toArray();
+        $invitationMode = 'edit';
+        $payload['email'] = $invitationModel['email'];
+        $payloadDataToBeTransform = [];
+        $user = $invitationModel['userId'] ? Repo::user()->get($invitationModel['userId'], true) : null;
+        if($user){
+            // if edit an invitation for existing user, used user data as invitation payload
+            $payloadDataToBeTransform = $user->getAllData();
+            $payloadDataToBeTransform['userGroupsToAdd'] = $payload['userGroupsToAdd'];
+            $payloadDataToBeTransform['submissionId'] = $payload['submissionId'];
+            $payloadDataToBeTransform['reviewRoundId'] = $payload['reviewRoundId'];
+            $payloadDataToBeTransform['reviewMethod'] = $payload['reviewMethod'];
+            $payloadDataToBeTransform['responseDueDate'] = $payload['responseDueDate'];
+            $payloadDataToBeTransform['reviewDueDate'] = $payload['reviewDueDate'];
+        }
+        $invitationPayload = (
+        new ReviewerAccessInviteResource($this->invitation))
+            ->transformInvitationPayload(
+                $invitationModel['userId'],
+                $invitationModel['userId'] ? $payloadDataToBeTransform : $payload,
+                $request->getContext()
+            );
+
+        $templateMgr = TemplateManager::getManager($request);
+        $breadcrumbs = $templateMgr->getTemplateVars('breadcrumbs');
+        $context = $request->getContext();
+        $breadcrumbs[] = [
+            'id' => 'contexts',
+            'name' => __('navigation.access'),
+            'url' => $request
+                ->getDispatcher()
+                ->url(
+                    $request,
+                    Application::ROUTE_PAGE,
+                    null,
+                    'management',
+                    'settings',
+                    ['access']
+                )
+        ];
+        $breadcrumbs[] = [
+            'id' => 'invitationWizard',
+            'name' => __('invitation.wizard.pageTitle'),
+        ];
+        $invitationContext = InvitationContextFactory::make(InvitationTypes::INVITATION_REVIEWER_ACCESS_INVITE->value);
+        $steps = new SendInvitationStep($invitationContext, $this->invitation, $context, $user);
+        $templateMgr->setState([
+            'steps' => $steps->getSteps(),
+            'emailTemplatesApiUrl' => $request
+                ->getDispatcher()
+                ->url(
+                    $request,
+                    Application::ROUTE_API,
+                    $context->getData('urlPath'),
+                    'emailTemplates'
+                ),
+            'primaryLocale' => $context->getData('primaryLocale'),
+            'invitationType' => InvitationTypes::INVITATION_REVIEWER_ACCESS_INVITE->value,
+            'invitationPayload' => $invitationPayload,
+            'invitationMode' => $invitationMode,
+            'invitationUserData' => $invitationModel['userId'] ?
+                (
+                new ReviewerAccessInviteResource($this->invitation))
+                    ->transformInvitationUserData(
+                        $user,
+                        $request->getContext()
+                    ) : [],
+            'pageTitle' =>
+                ($invitationPayload->givenName && $invitationPayload->familyName) ?
+                    $invitationPayload->givenName[Locale::getLocale()] . ' '
+                    . $invitationPayload->familyName[Locale::getLocale()] : $invitationPayload->inviteeEmail
+            ,
+            'pageTitleDescription' =>
+                __(
+                    'invitation.wizard.viewPageTitleDescription',
+                    ['name' =>
+                        $invitationPayload->givenName[Locale::getLocale()] ?
+                            $invitationPayload->givenName[Locale::getLocale()] : $invitationPayload->inviteeEmail]
+                ),
+        ]);
+        $templateMgr->assign([
+            'pageComponent' => 'Page',
+            'breadcrumbs' => $breadcrumbs,
+            'pageWidth' => TemplateManager::PAGE_WIDTH_FULL,
+        ]);
+        $templateMgr->display('/invitation/userInvitation.tpl');
     }
 
-    public function isUserReviewer($userId): bool
-    {
-        $currentUserGroups = Repo::userGroup()->userUserGroups($userId);
-        return $currentUserGroups->contains(
-            fn (UserGroup $userGroup) =>
-                $userGroup->roleId == Role::ROLE_ID_REVIEWER
-        );
-    }
 }

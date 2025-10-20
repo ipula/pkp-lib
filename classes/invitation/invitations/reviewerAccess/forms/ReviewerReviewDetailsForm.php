@@ -2,9 +2,12 @@
 
 namespace PKP\invitation\invitations\reviewerAccess\forms;
 
+use PKP\components\forms\FieldControlledVocab;
 use PKP\components\forms\FieldOptions;
 use PKP\components\forms\FieldText;
 use PKP\components\forms\FormComponent;
+use PKP\controlledVocab\ControlledVocab;
+use PKP\submission\reviewAssignment\ReviewAssignment;
 
 class ReviewerReviewDetailsForm extends FormComponent
 {
@@ -26,23 +29,23 @@ class ReviewerReviewDetailsForm extends FormComponent
         $this->action = $action;
         $this->locales = $locales;
 
-        $this->addField(new FieldOptions('reviewTypes', [
-            'label' => __('reviewerInvitation.reviewTypes'),
+        $this->addField(new FieldOptions('reviewMethod', [
+            'label' => __('reviewerInvitation.reviewMethod'),
             'isRequired' => true,
             'size' => 'large',
             'type' => 'radio',
             'options' => [
                 [
-                    'value' => 'anonymous',
-                    'label' => __('reviewerInvitation.reviewTypes.anonymousAuthorOrReviewer'),
+                    'value' => ReviewAssignment::SUBMISSION_REVIEW_METHOD_DOUBLEANONYMOUS,
+                    'label' => __('reviewerInvitation.reviewMethod.anonymousAuthorOrReviewer'),
                 ],
                 [
-                    'value' => 'disclosed',
-                    'label' => __('reviewerInvitation.reviewTypes.disclosedAuthor'),
+                    'value' => ReviewAssignment::SUBMISSION_REVIEW_METHOD_ANONYMOUS,
+                    'label' => __('reviewerInvitation.reviewMethod.disclosedAuthor'),
                 ],
                 [
-                    'value' => 'open',
-                    'label' => __('reviewerInvitation.reviewTypes.open'),
+                    'value' => ReviewAssignment::SUBMISSION_REVIEW_METHOD_OPEN,
+                    'label' => __('reviewerInvitation.reviewMethod.open'),
                 ],
             ],
         ]));

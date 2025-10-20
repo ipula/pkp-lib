@@ -40,6 +40,7 @@ use PKP\invitation\invitations\userRoleAssignment\rules\UserMustExistRule;
 use PKP\mail\mailables\ReviewerAccessInvitationNotify;
 use PKP\mail\variables\ReviewAssignmentEmailVariable;
 use PKP\security\Role;
+use PKP\security\Validation;
 use PKP\userGroup\UserGroup;
 
 class ReviewerAccessInvite extends Invitation implements IApiHandleable
@@ -207,7 +208,7 @@ class ReviewerAccessInvite extends Invitation implements IApiHandleable
             $validationContext === ValidationContext::VALIDATION_CONTEXT_INVITE ||
             $validationContext === ValidationContext::VALIDATION_CONTEXT_FINALIZE
         ) {
-            if (!$this->isUserReviewer()) { //if user already has reviewer permission no need to fill the userGroupsToAdd
+            if (!$this->isInvitationUserReviewer($this->getUserId(),$this->invitationModel->contextId)) { //if user already has reviewer permission no need to fill the userGroupsToAdd
                 $invitationValidationRules[Invitation::VALIDATION_RULE_GENERIC][] = new NoUserGroupChangesRule(
                     $this->getPayload()->userGroupsToAdd
                 );
@@ -227,15 +228,19 @@ class ReviewerAccessInvite extends Invitation implements IApiHandleable
         );
     }
 
-    public function isUserReviewer(): bool
+    /**
+     * @inheritDoc
+     */
+    public function updatePayload(?ValidationContext $validationContext = null): ?bool
     {
-        if(!$this->getUserId()){
-             return false;
+        // Encrypt the password if it exists
+        // There is already a validation rule that makes username and password fields interconnected
+        if (isset($this->getPayload()->username) && isset($this->getPayload()->password) && !$this->getPayload()->passwordHashed) {
+            $this->getPayload()->password = Validation::encryptCredentials($this->getPayload()->username, $this->getPayload()->password);
+            $this->getPayload()->passwordHashed = true;
         }
-        $currentUserGroups = Repo::userGroup()->userUserGroups($this->getUserId(),$this->invitationModel->contextId);
-        return $currentUserGroups->contains(
-            fn (UserGroup $userGroup) =>
-                $userGroup->roleId == Role::ROLE_ID_REVIEWER
-        );
+
+        // Call the parent updatePayload method to continue the normal update process
+        return parent::updatePayload($validationContext);
     }
 }

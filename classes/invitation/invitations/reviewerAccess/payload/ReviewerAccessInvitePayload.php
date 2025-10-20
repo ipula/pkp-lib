@@ -14,7 +14,7 @@
 
 namespace PKP\invitation\invitations\reviewerAccess\payload;
 
-use DAORegistry;
+use PKP\db\DAORegistry;
 use Illuminate\Validation\Rule;
 use PKP\invitation\core\enums\ValidationContext;
 use PKP\invitation\core\InvitePayload;
@@ -25,7 +25,6 @@ use PKP\invitation\invitations\userRoleAssignment\rules\NotNullIfPresent;
 use PKP\invitation\invitations\userRoleAssignment\rules\ProhibitedIncludingNull;
 use PKP\invitation\invitations\userRoleAssignment\rules\UserGroupExistsRule;
 use PKP\invitation\invitations\userRoleAssignment\rules\UsernameExistsRule;
-use PKP\invitation\invitations\userRoleAssignment\UserRoleAssignmentInvite;
 
 class ReviewerAccessInvitePayload extends InvitePayload
 {
@@ -51,10 +50,11 @@ class ReviewerAccessInvitePayload extends InvitePayload
         public ?array $inviteStagePayload = null,
         public ?bool $shouldUseInviteData = null,
         public ?int $submissionId = null,
-        public ?string $reviewTypes = null,
+        public ?string $reviewMethod = null,
         public ?string $responseDueDate = null,
         public ?string $reviewDueDate = null,
         public ?int $reviewRoundId = null,
+        public ?int $reviewAssignmentId = null,
     )
     {
         parent::__construct(get_object_vars($this));
@@ -152,7 +152,7 @@ class ReviewerAccessInvitePayload extends InvitePayload
                 'min:' . $site->getMinPasswordLength(),
             ],
             'userGroupsToAdd' => [
-                Rule::requiredIf(!$invitation->isUserReviewer() && $validationContext === ValidationContext::VALIDATION_CONTEXT_INVITE),
+                Rule::requiredIf(!$invitation->isInvitationUserReviewer($invitation->getUserId(),$context->getId()) && $validationContext === ValidationContext::VALIDATION_CONTEXT_INVITE),
                 'nullable',
                 'array',
                 'bail',
@@ -211,9 +211,9 @@ class ReviewerAccessInvitePayload extends InvitePayload
                 Rule::when($validationContext === ValidationContext::VALIDATION_CONTEXT_INVITE, ['required']),
                 'integer'
             ],
-            'reviewTypes' => [
+            'reviewMethod' => [
                 Rule::when($validationContext === ValidationContext::VALIDATION_CONTEXT_INVITE, ['required']),
-                'string'
+                'integer'
             ],
             'responseDueDate' => [
                 Rule::when($validationContext === ValidationContext::VALIDATION_CONTEXT_INVITE, ['required']),

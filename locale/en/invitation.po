@@ -379,10 +379,16 @@ msgstr "The user was disabled. You cannot assign them a role while they are disa
 msgid "acceptInvitation.privacyConsent"
 msgstr "Privacy Consent"
 
-msgid "reviewerInvitation.wizard.pageTitle"
+msgid "reviewerInvitation.wizard.pageTitle.newUser"
 msgstr "Create a new reviewer"
 
-msgid "reviewerInvitation.wizard.pageTitleDescription"
+msgid "reviewerInvitation.wizard.pageTitle.existingUser"
+msgstr "Enroll existing user as a reviewer"
+
+msgid "reviewerInvitation.wizard.pageTitleDescription.existingUser"
+msgstr "You are inviting an existing user to take a reviewer role in OJS"
+
+msgid "reviewerInvitation.wizard.pageTitleDescription.newUser"
 msgstr "When creating a reviewer in OJS, you can search for an existing user and enroll them as a reviewer if they already have an account, or invite them to create one and join as a new reviewer if no account is found"
 
 msgid "reviewerInvitation.reviewDetails.stepName"
@@ -397,8 +403,8 @@ msgstr "Save and Continue"
 msgid "reviewerInvitation.reviewDetails.stepDescription"
 msgstr "you can add review related details."
 
-msgid "reviewerInvitation.reviewTypes"
-msgstr "Review Types"
+msgid "reviewerInvitation.reviewMethod"
+msgstr "Review Type"
 
 msgid "reviewerInvitation.responseDueDate"
 msgstr "Review Response Date"
@@ -409,13 +415,13 @@ msgstr "Review Due Date"
 msgid "reviewerInvitation.modal.message"
 msgstr "{$email} has been invited to review the submission \"{$articleTitle}\"<br><br> You can be updated about the user's decision on the reviewer panel in the review workflow or through email and OJS notifications."
 
-msgid "reviewerInvitation.reviewTypes.anonymousAuthorOrReviewer"
+msgid "reviewerInvitation.reviewMethod.anonymousAuthorOrReviewer"
 msgstr "Anonymous Reviewer / Anonymous Author"
 
-msgid "reviewerInvitation.reviewTypes.disclosedAuthor"
+msgid "reviewerInvitation.reviewMethod.disclosedAuthor"
 msgstr "Anonymous Reviewer / Disclosed Author"
 
-msgid "reviewerInvitation.reviewTypes.open"
+msgid "reviewerInvitation.reviewMethod.open"
 msgstr "Open"
 
 msgid "reviewerInvitation.modal.button"
@@ -442,5 +448,31 @@ msgstr "Invite user to take the role of a reviewer in the system"
 msgid "reviewerInvitation.enterDetails.stepLabel"
 msgstr "{$step} - Enter details to add user as a reviewer"
 
-msgid "reviewerInvitation.enterDetails.stepDescription"
-msgstr "Invite user to take the role of a reviewer in the system"
+msgid "acceptReviewerInvitation.aboutSubmission.stepName"
+msgstr "About Submission"
+
+msgid "acceptReviewerInvitation.aboutSubmission.stepLabel"
+msgstr "About Submission"
+
+msgid "acceptReviewerInvitation.aboutSubmission.stepDescription"
+msgstr "You can access the submission file and go through the review details"
+
+msgid "acceptReviewerInvitation.aboutSubmission.nextButtonLabel"
+msgstr "Accept review invite and create account"
+
+msgid "reviewerInvitation.sendMail.nextButtonLabel"
+msgstr "Invite user to the reviewer role"
+
+msgid "reviewerInvitation.sendMail.stepDescription"
+msgstr "Send an email to user to let them about your decision to adding them as reviewer on the submission along with setting OJS for the first time. The email could also entail information about GDPR policies of the journal and ORCiD"
+
+msgid "reviewerInvitation.wizard.breadcrumb"
+msgstr "Add reviewer"
+
+msgid "acceptReviewerInvitation.decline"
+msgstr "Decline review request"
+
+msgid "reviewerInvitation.addUserRolesMessage"
+msgstr "Please not that you can invite the user to a reviewer role from here. To invite the user to other roles, you can got to Users & Roles section, once the accepts the invite."
+
+

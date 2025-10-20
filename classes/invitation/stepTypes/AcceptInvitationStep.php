@@ -22,13 +22,13 @@ class AcceptInvitationStep extends InvitationStepTypes
     private InvitationContext $contextStrategy;
     private Invitation $invitation;
     private Context $context;
-    private User $user;
+    private ?User $user;
 
     public function __construct(
         InvitationContext $contextStrategy,
         Invitation $invitation,
         Context $context,
-        User $user
+        ?User $user
     ) {
         $this->contextStrategy = $contextStrategy;
         $this->invitation = $invitation;

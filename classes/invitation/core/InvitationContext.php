@@ -15,5 +15,5 @@ interface InvitationContext
     /**
      * Steps for accepting an invitation.
      */
-    public function getAcceptSteps(Invitation $invitation, Context $context, User $user): array;
+    public function getAcceptSteps(Invitation $invitation, Context $context, ?User $user): array;
 }

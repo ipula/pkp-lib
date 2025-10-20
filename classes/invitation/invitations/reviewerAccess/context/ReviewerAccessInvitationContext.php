@@ -28,15 +28,16 @@ class ReviewerAccessInvitationContext implements InvitationContext
         if ((!$invitation->getId()  && !$user)) {
             $steps[] = $this->invitationSearchUser();
         }
-        $steps[] = $this->invitationDetailsForm($context);
+        $steps[] = $this->invitationDetailsForm($invitation,$context,$user);
         $steps[] = $this->invitationReviewDetails($context);
         $steps[] = $this->invitationInvitedEmail($context);
         return $steps;
     }
 
-    public function getAcceptSteps(Invitation $invitation, Context $context, User $user): array
+    public function getAcceptSteps(Invitation $invitation, Context $context, ?User $user): array
     {
         $steps = [];
+        $steps[] = $this->acceptInvitationAboutSubmissionStep();
         switch ($user) {
             case !null:
                 if(!$user->hasVerifiedOrcid() && OrcidManager::isEnabled($context)) {
@@ -50,6 +51,7 @@ class ReviewerAccessInvitationContext implements InvitationContext
                 $steps[] = $this->userAccountDetailsStep();
                 $steps[] = $this->userDetailsStep($context);
         }
+
         $steps[] = $this->acceptInvitationReviewStep($context);
         return $steps;
     }
@@ -89,7 +91,7 @@ class ReviewerAccessInvitationContext implements InvitationContext
      *
      * @throws Exception
      */
-    private function invitationDetailsForm(Context $context): \stdClass
+    private function invitationDetailsForm(?Invitation $invitation,Context $context,?User $user): \stdClass
     {
         $localeNames = $context->getSupportedFormLocaleNames();
         $locales = [];
@@ -101,7 +103,7 @@ class ReviewerAccessInvitationContext implements InvitationContext
         }
         $sections = new Sections(
             'userDetails',
-            __('reviewerInvitation.enterDetails.stepName'),
+            $invitation->isInvitationUserReviewer($user?->getId(),$context->getId())?__('reviewerInvitation.enterDetails.stepName'):__('reviewerInvitation.enterDetails.stepName'),
             'form',
             'UserInvitationDetailsFormStep',
             __('reviewerInvitation.enterDetails.stepDescription'),
@@ -361,6 +363,39 @@ class ReviewerAccessInvitationContext implements InvitationContext
             __('acceptInvitation.detailsReview.nextButtonLabel'),
             'review',
             __('acceptInvitation.detailsReview.stepDescription'),
+        );
+        $step->addSectionToStep($sections->getState());
+        return $step->getState();
+    }
+
+    /**
+     * about submission details invitation step
+     *
+     * @throws \Exception
+     */
+    private function acceptInvitationAboutSubmissionStep(): \stdClass
+    {
+        $sections = new Sections(
+            'aboutSubmissionForm',
+            __('acceptReviewerInvitation.aboutSubmission.stepName'),
+            'form',
+            'AcceptInvitationAboutSubmission',
+            __('acceptReviewerInvitation.aboutSubmission.stepDescription'),
+        );
+        $sections->addSection(
+            null,
+            [
+                'validateFields' => []
+            ]
+        );
+        $step = new Step(
+            'aboutSubmission',
+            __('acceptReviewerInvitation.aboutSubmission.stepName'),
+            __('acceptReviewerInvitation.aboutSubmission.stepLabel'),
+            __('acceptReviewerInvitation.aboutSubmission.nextButtonLabel'),
+            'form',
+            __('acceptReviewerInvitation.aboutSubmission.stepDescription'),
+            true
         );
         $step->addSectionToStep($sections->getState());
         return $step->getState();

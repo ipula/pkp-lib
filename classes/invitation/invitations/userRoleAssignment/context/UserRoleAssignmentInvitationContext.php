@@ -32,7 +32,7 @@ class UserRoleAssignmentInvitationContext implements InvitationContext
         return $steps;
     }
 
-    public function getAcceptSteps(Invitation $invitation, Context $context, User $user): array
+    public function getAcceptSteps(Invitation $invitation, Context $context, ?User $user): array
     {
         $steps = [];
         switch ($user) {
