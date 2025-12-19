@@ -194,3 +194,7 @@ msgstr ""
 
 msgid "reviewer.submission.reviewRound.reviewNotCompleted"
 msgstr "The review was not completed."
+
+msgid "reviewer.reviewAssignmentInvite.validation.error.user.alreadyAssignedToReview"
+msgstr "This user is already assigned as a reviewer in this review round."
+
